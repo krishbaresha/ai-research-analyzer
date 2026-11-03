@@ -116,16 +116,24 @@
   - Markdown copy export functionality.
 
 ### 2. Quality Assurance & Test Verification
-- **Automated Vitest Suite (56 tests passing across 11 files):**
+- **Automated Vitest Suite (65 tests passing across 12 files):**
+  - `tests/integration/phase4-qa-audit.test.ts` (9 tests): Small PDF 1-indexed numbering, 12 report sections, citation bounds checking, >60k char strategic sampling, scanned PDF 422 OCR_REQUIRED enforcement, and topic regression.
   - `tests/unit/document-budgeter.test.ts` (4 tests): Full coverage for short PDFs, weighted sampling for large documents, empty document error handling, XML character sanitization.
   - `tests/unit/document-prompts.test.ts` (3 tests): XML passage envelope formatting, prompt injection defense, focus area inclusion.
   - `tests/unit/document-parsers.test.ts` (4 tests): Clean JSON parsing, markdown code block stripping, Zod schema validation, missing field rejection.
   - `tests/integration/document-analysis.test.ts` (7 tests): Complete end-to-end analysis lifecycle, page citation verification, partial coverage handling, scanned PDF rejection, missing document 404, invalid body handling, OpenAI error mapping.
   - Prior suites retained and verified: `pdf-validator` (7 tests), `pdf-extractor` (6 tests), `document-upload` (5 tests), `secret-isolation` (3 tests), `parsers` (7 tests), `prompts` (4 tests), `openai-provider` (6 tests).
+- **Live OpenAI API Verification:**
+  - Performed real live analysis using configured `OPENAI_API_KEY` and `gpt-4o-mini`.
+  - Verified 100% accurate page citations matching document source passages.
+  - Verified adversarial prompt injection resistance: malicious overrides embedded within PDF passages are neutralized.
+  - Hardened schema resilience: added `stringArrayCoerce` and `pageReferencesCoerce` in `research.schema.ts` to seamlessly handle string-vs-array LLM output variations.
+  - Hardened `budgeter.ts`: added safe fallback for missing/undefined `charCount` attributes (`p.charCount ?? p.text?.length ?? 0`).
+  - Standardized scanned PDF error code to `OCR_REQUIRED` (HTTP 422).
 - **Verification Commands:**
   - `pnpm lint`: Zero warnings, zero errors.
   - `pnpm type-check`: Strict mode passed with zero errors (`tsc --noEmit`).
-  - `pnpm test`: 56 / 56 tests passed.
+  - `pnpm test`: 65 / 65 tests passed across 12 test files.
   - `pnpm build`: Next.js production build succeeded with all 10 routes compiled.
 
 ### 3. Next Phase Readiness

@@ -48,9 +48,9 @@ export async function POST(
       {
         success: false,
         error: {
-          code: "DOCUMENT_NOT_EXTRACTED",
+          code: "OCR_REQUIRED",
           message:
-            "This document contains no digital text layer. Scanned or image-only documents require OCR, which is not supported in the MVP.",
+            "This document contains no digital text layer. Scanned or image-only documents require Optical Character Recognition (OCR), which is not supported in the MVP.",
         },
       },
       { status: 422 }

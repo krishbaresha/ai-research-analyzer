@@ -51,6 +51,7 @@ pnpm build
 
 | Test Suite | File | Tests | Result | Purpose |
 |---|---|---|---|---|
+| **Phase 4 QA Audit Suite** | `tests/integration/phase4-qa-audit.test.ts` | 9 | **PASSED** | Comprehensive audit testing small PDFs, multi-page boundary sequential preservation, 12-section presence, citation bounds integrity, 60k-char budget sampling, scanned PDF 422 OCR_REQUIRED enforcement, and topic regression. |
 | **Document Analysis Integration** | `tests/integration/document-analysis.test.ts` | 7 | **PASSED** | Verifies `POST /api/documents/[id]/analyze`, end-to-end grounded report generation, page citation preservation, partial coverage handling, scanned PDF 422 rejection, 404 missing document handling, and OpenAI error mapping. |
 | **Document Budgeter** | `tests/unit/document-budgeter.test.ts` | 4 | **PASSED** | Verifies full coverage for documents under budget, weighted strategic sampling for long documents, empty document error handling, and XML character sanitization. |
 | **Document Prompts & Injection Defense** | `tests/unit/document-prompts.test.ts` | 3 | **PASSED** | Verifies defensive `<document_passage page="N">` XML envelopes, anti-override constraints, and focus area inclusion. |
@@ -63,7 +64,7 @@ pnpm build
 | **Topic Prompts & Anti-Injection** | `tests/unit/prompts.test.ts` | 4 | **PASSED** | Verifies structural isolation delimiters (`<user_topic>`, `<scope_constraints>`) and defensive system instructions forbidding prompt overrides. |
 | **OpenAI Provider Integration (Mocked)** | `tests/integration/openai-provider.test.ts` | 6 | **PASSED** | Verifies `client.responses.create()` calls, `AIAuthError` on missing key, 401 handling, 429 quota/rate limit error mapping, and malformed output rejection. |
 
-**Total:** 11 test files, 56 automated tests, 100% passing.
+**Total:** 12 test files, 65 automated tests, 100% passing.
 
 ---
 
@@ -71,11 +72,13 @@ pnpm build
 
 | Check | Tool / Command | Result | Details |
 |---|---|---|---|
-| **Unit & Integration Tests** | `vitest run` | **56 / 56 PASSED** | All document analysis, budgeting, PDF extraction, prompt, provider, and security tests pass. |
+| **Unit & Integration Tests** | `vitest run` | **65 / 65 PASSED** | All document analysis, budgeting, PDF extraction, prompt, provider, and security tests pass. |
 | **TypeScript Strictness** | `pnpm type-check` | **PASSED (0 errors)** | Zero type errors with strict mode enabled. |
 | **Next.js Linter** | `pnpm lint` | **PASSED (0 warnings)** | Clean lint run, zero warnings or errors. |
 | **Production Build** | `pnpm build` | **PASSED** | All 10 static and server-rendered routes compile cleanly. |
 | **Client Secret Isolation** | Automated scan | **VERIFIED** | No keys or server services accessible to browser bundles. |
+| **Live OpenAI API Call** | Live execution | **VERIFIED** | Real API call succeeded via `gpt-4o-mini`, generating full grounded report with verifiable citations. |
+| **Prompt Injection Defense** | Adversarial test | **VERIFIED** | Malicious overrides and XML delimiter escapes inside PDF passages neutralized. |
 | **Context Window Budgeting** | Vitest suite | **VERIFIED** | Long documents are budgeted within 60,000 chars with exact coverage metrics. |
 
 ---

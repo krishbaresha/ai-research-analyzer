@@ -7,6 +7,46 @@ export const evidenceLabelSchema = z.enum([
   "not_established",
 ]);
 
+/**
+ * Resilient array coercion helper for LLM outputs.
+ * Converts comma-delimited strings or single strings into string arrays,
+ * ensuring strict schema adherence even when models emit single string values.
+ */
+export const stringArrayCoerce = z.preprocess((val) => {
+  if (Array.isArray(val)) {
+    return val.map((v) => (typeof v === "string" ? v.trim() : String(v))).filter(Boolean);
+  }
+  if (typeof val === "string") {
+    const trimmed = val.trim();
+    if (!trimmed) return [];
+    if (trimmed.includes(",") || trimmed.includes(";")) {
+      return trimmed.split(/[,;]/).map((s) => s.trim()).filter(Boolean);
+    }
+    return [trimmed];
+  }
+  return val;
+}, z.array(z.string()).default([]));
+
+/**
+ * Resilient page references coercion helper for LLM outputs.
+ * Accepts numbers, number arrays, or parseable strings, ensuring clean page number arrays.
+ */
+export const pageReferencesCoerce = z.preprocess((val) => {
+  if (typeof val === "number") {
+    return val > 0 ? [val] : [];
+  }
+  if (typeof val === "string") {
+    const parsed = parseInt(val.trim(), 10);
+    return !isNaN(parsed) && parsed > 0 ? [parsed] : [];
+  }
+  if (Array.isArray(val)) {
+    return val
+      .map((item) => (typeof item === "number" ? item : parseInt(String(item), 10)))
+      .filter((n) => typeof n === "number" && !isNaN(n) && n > 0);
+  }
+  return [];
+}, z.array(z.number().int().positive()).default([]));
+
 export const analyzeTopicRequestSchema = z.object({
   topic: z
     .string()
@@ -36,7 +76,7 @@ export const findingItemSchema = z.object({
   id: z.string().default(() => Math.random().toString(36).substring(2, 9)),
   finding: z.string().min(1, "Finding statement is required"),
   evidenceSource: evidenceLabelSchema.default("from_document"),
-  pageReferences: z.array(z.number().int().positive()).optional().default([]),
+  pageReferences: pageReferencesCoerce,
   quote: z.string().optional().default(""),
   confidenceNotes: z.string().optional().default(""),
 });
@@ -57,11 +97,11 @@ export const researchReportSchema = z.object({
   methodologyOverview: z.string().optional().default(""),
   keyFindings: z.array(findingItemSchema).min(1, "At least one key finding is required"),
   criticalAnalysis: z.string().optional().default(""),
-  strengths: z.array(z.string()).default([]),
-  limitations: z.array(z.string()).default([]),
-  researchGaps: z.array(z.string()).default([]),
+  strengths: stringArrayCoerce,
+  limitations: stringArrayCoerce,
+  researchGaps: stringArrayCoerce,
   conclusion: z.string().min(1),
-  suggestedFollowUps: z.array(z.string()).default([]),
+  suggestedFollowUps: stringArrayCoerce,
   evidenceStatus: evidenceLabelSchema.default("ai_interpretation"),
   modelId: z.string(),
   createdAt: z.string().default(() => new Date().toISOString()),
@@ -75,31 +115,31 @@ export type ValidatedResearchReport = z.infer<typeof researchReportSchema>;
 
 export const objectiveItemSchema = z.object({
   objective: z.string().min(1),
-  pageReferences: z.array(z.number().int().positive()).optional().default([]),
+  pageReferences: pageReferencesCoerce,
   evidenceSource: evidenceLabelSchema.default("from_document"),
 });
 
 export const detailedSectionSchema = z.object({
   heading: z.string().min(1),
   content: z.string().min(1),
-  pageReferences: z.array(z.number().int().positive()).optional().default([]),
+  pageReferences: pageReferencesCoerce,
   evidenceSource: evidenceLabelSchema.default("from_document"),
 });
 
 export const methodologyAssessmentSchema = z.object({
   approach: z.string().min(1),
-  datasetsUsed: z.array(z.string()).default([]),
-  baselines: z.array(z.string()).default([]),
-  evaluationMetrics: z.array(z.string()).default([]),
+  datasetsUsed: stringArrayCoerce,
+  baselines: stringArrayCoerce,
+  evaluationMetrics: stringArrayCoerce,
   methodologicalRigor: z.string().min(1),
-  pageReferences: z.array(z.number().int().positive()).optional().default([]),
+  pageReferences: pageReferencesCoerce,
   evidenceSource: evidenceLabelSchema.default("from_document"),
 });
 
 export const conceptItemSchema = z.object({
   term: z.string().min(1),
   definition: z.string().min(1),
-  pageReferences: z.array(z.number().int().positive()).optional().default([]),
+  pageReferences: pageReferencesCoerce,
 });
 
 export const documentAnalysisOverviewSchema = z.object({
@@ -107,7 +147,7 @@ export const documentAnalysisOverviewSchema = z.object({
   documentId: z.string().min(1),
   originalFilename: z.string().min(1),
   totalPages: z.number().int().positive(),
-  analyzedPages: z.array(z.number().int().positive()),
+  analyzedPages: pageReferencesCoerce,
   coveragePercentage: z.number().min(0).max(100),
   isPartialCoverage: z.boolean(),
   totalWordCount: z.number().int().nonnegative(),
@@ -123,12 +163,12 @@ export const documentAnalysisReportSchema = z.object({
   detailedAnalysis: z.array(detailedSectionSchema).min(1, "At least one detailed analysis section is required"),
   methodologyAssessment: methodologyAssessmentSchema,
   importantConcepts: z.array(conceptItemSchema).default([]),
-  strengths: z.array(z.string()).default([]),
-  weaknesses: z.array(z.string()).default([]),
-  limitations: z.array(z.string()).default([]),
-  researchGaps: z.array(z.string()).default([]),
+  strengths: stringArrayCoerce,
+  weaknesses: stringArrayCoerce,
+  limitations: stringArrayCoerce,
+  researchGaps: stringArrayCoerce,
   conclusion: z.string().min(1),
-  suggestedFurtherResearch: z.array(z.string()).default([]),
+  suggestedFurtherResearch: stringArrayCoerce,
   modelId: z.string(),
   generatedAt: z.string().default(() => new Date().toISOString()),
 });

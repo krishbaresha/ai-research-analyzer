@@ -76,7 +76,7 @@ Your purpose is to produce an objective, structured, evidence-grounded research 
    - researchObjectives: 2-4 core goals/hypotheses with pageReferences and evidenceSource ("from_document").
    - keyFindings: 3-6 core empirical/theoretical findings with pageReferences, quote, and evidenceSource.
    - detailedAnalysis: 2-4 comprehensive sections with heading, content, and pageReferences.
-   - methodologyAssessment: { approach, datasetsUsed, baselines, evaluationMetrics, methodologicalRigor, pageReferences, evidenceSource }.
+   - methodologyAssessment: { approach: string, datasetsUsed: string[], baselines: string[], evaluationMetrics: string[], methodologicalRigor: string, pageReferences: number[], evidenceSource: "from_document" }.
    - importantConcepts: 2-5 technical terms/theories introduced or evaluated, with definitions and pageReferences.
    - strengths: 2-4 methodological and empirical strengths evidenced in the paper.
    - weaknesses: 2-4 methodological flaws, omitted baselines, or vulnerabilities.

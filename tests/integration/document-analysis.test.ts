@@ -174,7 +174,7 @@ describe("Document Analysis & Grounded Report Integration (Phase 4)", () => {
 
     expect(res.status).toBe(422);
     expect(body.success).toBe(false);
-    expect(body.error.code).toBe("DOCUMENT_NOT_EXTRACTED");
+    expect(body.error.code).toBe("OCR_REQUIRED");
   });
 
   it("maps OpenAI rate limit (429) to AI_RATE_LIMIT error", async () => {

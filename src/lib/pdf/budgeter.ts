@@ -63,16 +63,19 @@ export function budgetDocumentPages(
     };
   }
 
-  // Calculate total characters across all valid pages
-  const totalChars = validPages.reduce((acc, p) => acc + p.charCount, 0);
+  // Calculate total characters across all valid pages (safeguard against undefined charCount)
+  const totalChars = validPages.reduce(
+    (acc, p) => acc + (p.charCount ?? p.text?.length ?? 0),
+    0
+  );
 
   // If entire document fits within context budget, retain all pages
   if (totalChars <= maxCharBudget) {
     const passages = validPages.map((p) => ({
       pageNumber: p.pageNumber,
       text: sanitizePassageText(p.text),
-      charCount: p.charCount,
-      wordCount: p.wordCount,
+      charCount: p.charCount ?? p.text?.length ?? 0,
+      wordCount: p.wordCount ?? 0,
     }));
 
     const analyzedPages = passages.map((p) => p.pageNumber).sort((a, b) => a - b);
@@ -99,18 +102,20 @@ export function budgetDocumentPages(
   // Step A: Priority to first 3 pages
   for (let i = 0; i < Math.min(3, validPages.length); i++) {
     const page = validPages[i];
-    if (currentBudgetUsed + page.charCount <= maxCharBudget) {
+    const pageChars = page.charCount ?? page.text?.length ?? 0;
+    if (currentBudgetUsed + pageChars <= maxCharBudget) {
       selectedPagesMap.set(page.pageNumber, page);
-      currentBudgetUsed += page.charCount;
+      currentBudgetUsed += pageChars;
     }
   }
 
   // Step B: Priority to final 2 pages
   for (let i = Math.max(3, validPages.length - 2); i < validPages.length; i++) {
     const page = validPages[i];
-    if (!selectedPagesMap.has(page.pageNumber) && currentBudgetUsed + page.charCount <= maxCharBudget) {
+    const pageChars = page.charCount ?? page.text?.length ?? 0;
+    if (!selectedPagesMap.has(page.pageNumber) && currentBudgetUsed + pageChars <= maxCharBudget) {
       selectedPagesMap.set(page.pageNumber, page);
-      currentBudgetUsed += page.charCount;
+      currentBudgetUsed += pageChars;
     }
   }
 
@@ -120,9 +125,10 @@ export function budgetDocumentPages(
     const step = Math.max(1, Math.floor(remainingPages.length / 5));
     for (let i = 0; i < remainingPages.length; i += step) {
       const page = remainingPages[i];
-      if (currentBudgetUsed + page.charCount <= maxCharBudget) {
+      const pageChars = page.charCount ?? page.text?.length ?? 0;
+      if (currentBudgetUsed + pageChars <= maxCharBudget) {
         selectedPagesMap.set(page.pageNumber, page);
-        currentBudgetUsed += page.charCount;
+        currentBudgetUsed += pageChars;
       }
     }
   }
@@ -134,8 +140,8 @@ export function budgetDocumentPages(
   const passages: BudgetedPassage[] = selectedPages.map((p) => ({
     pageNumber: p.pageNumber,
     text: sanitizePassageText(p.text),
-    charCount: p.charCount,
-    wordCount: p.wordCount,
+    charCount: p.charCount ?? p.text?.length ?? 0,
+    wordCount: p.wordCount ?? 0,
   }));
 
   const analyzedPages = passages.map((p) => p.pageNumber);
