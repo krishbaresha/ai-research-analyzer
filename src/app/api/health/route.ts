@@ -8,10 +8,10 @@ export async function GET() {
     success: true,
     data: {
       status: "healthy",
-      phase: 1,
-      groqConfigured: config.hasGroqKey,
+      phase: 2,
+      provider: "openai",
+      openAIConfigured: config.hasOpenAIKey,
       configuredModel: config.model,
-      fallbackModel: config.fallbackModel,
       maxUploadBytes: config.maxUploadSizeBytes,
       runtime: "nodejs",
       timestamp: new Date().toISOString(),

@@ -16,8 +16,9 @@ All API routes return responses conforming to the standard JSON envelope:
   "success": true,
   "data": { ... },
   "metadata": {
-    "timestamp": "2026-11-03T10:00:00Z",
-    "processingTimeMs": 1420
+    "timestamp": "2026-11-03T11:00:00Z",
+    "processingTimeMs": 1420,
+    "model": "gpt-4o-mini"
   }
 }
 ```
@@ -28,25 +29,27 @@ All API routes return responses conforming to the standard JSON envelope:
   "success": false,
   "error": {
     "code": "VALIDATION_ERROR",
-    "message": "The research topic cannot exceed 500 characters.",
+    "message": "Research topic cannot exceed 1000 characters.",
     "details": [
       {
         "field": "topic",
-        "issue": "String must contain at most 500 character(s)"
+        "issue": "String must contain at most 1000 character(s)"
       }
     ]
   }
 }
 ```
 
-### Common Error Codes
-- `BAD_REQUEST` (400) - Missing or malformed parameters.
+### Standard Error Codes
+- `BAD_REQUEST` (400) - Missing or malformed JSON payload.
 - `VALIDATION_ERROR` (422) - Input failed Zod validation schema.
-- `PAYLOAD_TOO_LARGE` (413) - PDF file exceeds maximum upload size (e.g., 10MB).
+- `AI_AUTH_ERROR` (401/500) - Server missing or invalid `OPENAI_API_KEY`.
+- `AI_RATE_LIMIT` (429) - OpenAI rate limit reached; retry after backoff.
+- `AI_QUOTA_EXCEEDED` (402) - Account credit exhaustion or quota limit.
+- `AI_TIMEOUT` (504) - Inference request exceeded timeout window.
+- `AI_MALFORMED_OUTPUT` (502) - Model generated invalid JSON failing schema validation.
+- `PAYLOAD_TOO_LARGE` (413) - Upload exceeds maximum upload size (10MB).
 - `UNSUPPORTED_MEDIA_TYPE` (415) - Non-PDF file uploaded.
-- `GROQ_AUTH_ERROR` (500) - Server missing or invalid `GROQ_API_KEY`.
-- `GROQ_RATE_LIMITED` (429) - Groq API rate limit reached; client should back off.
-- `AI_GENERATION_FAILED` (502) - Model failed to generate valid structured analysis.
 - `NOT_FOUND` (404) - Requested project, document, or analysis not found.
 
 ---
@@ -56,9 +59,9 @@ All API routes return responses conforming to the standard JSON envelope:
 ### 2.1 Research Topic Analysis
 
 #### `POST /api/research/analyze-topic`
-Submits a user-provided research topic or question for structured server-side Groq analysis.
+Submits a user-provided research topic or question for structured server-side analysis via OpenAI Responses API (`client.responses.create`).
 
-- **Authentication:** Public / Optional User Session
+- **Authentication:** Public / Optional User Session (Key managed on server)
 - **Content-Type:** `application/json`
 
 **Request Body:**
@@ -75,155 +78,53 @@ Submits a user-provided research topic or question for structured server-side Gr
   "success": true,
   "data": {
     "id": "res_8f93e2b1",
+    "title": "Retrieval-Augmented Generation for Hallucination Mitigation in Academic Review",
     "researchQuestion": "Impact of retrieval-augmented generation on hallucination reduction in academic literature review",
     "scope": "Focus on computer science papers published between 2023 and 2025",
-    "executiveSummary": "...",
-    "mainThemes": [
-      {
-        "title": "Contextual Grounding",
-        "description": "..."
-      }
-    ],
-    "keyConsiderations": [
-      "..."
-    ],
-    "limitations": [
-      "..."
-    ],
-    "suggestedQuestions": [
-      "..."
-    ],
-    "evidenceStatus": "ai_interpretation",
-    "model": "llama-3.3-70b-versatile"
-  }
-}
-```
-
----
-
-### 2.2 Document Upload & Validation
-
-#### `POST /api/documents/upload`
-Uploads a PDF file, validates MIME type and file integrity, and extracts page-partitioned text.
-
-- **Content-Type:** `multipart/form-data`
-- **Form Fields:**
-  - `file`: PDF binary blob (Max 10MB default)
-  - `projectId`: (Optional UUID)
-
-**Response (`201 Created`):**
-```json
-{
-  "success": true,
-  "data": {
-    "documentId": "doc_a491f092",
-    "originalFilename": "attention_is_all_you_need.pdf",
-    "fileSizeBytes": 2214300,
-    "pageCount": 15,
-    "extractionStatus": "complete",
-    "textLength": 43210,
-    "previewSnippet": "Provided below is the abstract..."
-  }
-}
-```
-
----
-
-### 2.3 Document Analysis
-
-#### `POST /api/documents/[id]/analyze`
-Runs Groq analysis over the extracted document text chunks, producing an evidence-grounded research report with page citations.
-
-- **Content-Type:** `application/json`
-
-**Request Body:**
-```json
-{
-  "focusPrompt": "Synthesize the core architecture, training dataset, and hardware limitations."
-}
-```
-
-**Response (`200 OK`):**
-```json
-{
-  "success": true,
-  "data": {
-    "analysisId": "ana_738df9a1",
-    "documentId": "doc_a491f092",
-    "title": "Attention Is All You Need",
-    "executiveSummary": "...",
-    "methodology": "...",
+    "executiveSummary": "This analysis investigates the role of RAG architectures in dampening factual drift...",
+    "backgroundContext": "Standard parametric LLMs suffer from ungrounded hallucinations...",
+    "methodologyOverview": "Empirical studies benchmark factual consistency using ROUGE, BERTScore, and human evaluation...",
     "keyFindings": [
       {
-        "finding": "Multi-head attention allows the model to jointly attend to information from different representation subspaces.",
-        "evidenceSource": "from_document",
-        "pageReferences": [4, 5],
-        "quote": "Multi-head attention allows the model to jointly attend to information..."
+        "id": "f1",
+        "finding": "RAG reduces ungrounded hallucinations by up to 68% when paired with dense retrieval chunking.",
+        "evidenceSource": "ai_interpretation"
       }
     ],
-    "strengths": ["..."],
-    "limitations": ["..."],
-    "researchGaps": ["..."],
-    "coveragePercentage": 100
+    "criticalAnalysis": "While RAG significantly improves factual recall, chunk fragmentation introduces boundary loss...",
+    "strengths": [
+      "Dynamic knowledge integration",
+      "Traceable citation capability"
+    ],
+    "limitations": [
+      "Retrieval latency overhead",
+      "Sensitivity to noisy retrieval results"
+    ],
+    "researchGaps": [
+      "Standardized multi-hop reasoning benchmarks across multi-modal academic figures"
+    ],
+    "conclusion": "RAG represents the prevailing standard for evidence grounding in research tasks.",
+    "suggestedFollowUps": [
+      "How do graph-based RAG architectures compare to dense vector retrieval in hierarchical document synthesis?"
+    ],
+    "evidenceStatus": "ai_interpretation",
+    "modelId": "gpt-4o-mini",
+    "createdAt": "2026-11-03T11:00:00.000Z"
+  },
+  "metadata": {
+    "timestamp": "2026-11-03T11:00:00.000Z",
+    "processingTimeMs": 2340,
+    "model": "gpt-4o-mini"
   }
 }
 ```
 
 ---
 
-### 2.4 Document-Grounded Q&A (Chat)
-
-#### `POST /api/documents/[id]/chat`
-Queries the document passages. Retrieves relevant chunks and generates an answer strictly grounded in the document evidence.
-
-- **Content-Type:** `application/json`
-
-**Request Body:**
-```json
-{
-  "question": "What optimizer was used and what was the warmup steps value?",
-  "history": [
-    { "role": "user", "content": "..." },
-    { "role": "assistant", "content": "..." }
-  ]
-}
-```
-
-**Response (`200 OK`):**
-```json
-{
-  "success": true,
-  "data": {
-    "answer": "The Adam optimizer was used with beta1 = 0.9, beta2 = 0.98, and epsilon = 10^-9. The learning rate schedule used 4000 warmup steps.",
-    "grounded": true,
-    "citations": [
-      {
-        "pageNumber": 7,
-        "snippet": "We used the Adam optimizer with beta1 = 0.9, beta2 = 0.98 and epsilon = 10^-9... warmup_steps = 4000."
-      }
-    ]
-  }
-}
-```
-
-If the document does not contain the answer:
-```json
-{
-  "success": true,
-  "data": {
-    "answer": "This information is not established in the provided document material.",
-    "grounded": false,
-    "citations": []
-  }
-}
-```
-
----
-
-### 2.5 Health & Status
+### 2.2 Health & Status
 
 #### `GET /api/health`
-Checks server health and validates Groq configuration status without exposing API key secrets.
+Checks server health and validates OpenAI configuration status without exposing API key secrets.
 
 **Response (`200 OK`):**
 ```json
@@ -231,9 +132,13 @@ Checks server health and validates Groq configuration status without exposing AP
   "success": true,
   "data": {
     "status": "healthy",
-    "groqConfigured": true,
-    "configuredModel": "llama-3.3-70b-versatile",
-    "runtime": "nodejs"
+    "phase": 2,
+    "provider": "openai",
+    "openAIConfigured": true,
+    "configuredModel": "gpt-4o-mini",
+    "maxUploadBytes": 10485760,
+    "runtime": "nodejs",
+    "timestamp": "2026-11-03T11:00:00.000Z"
   }
 }
 ```

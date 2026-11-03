@@ -63,16 +63,16 @@ export default function DashboardPage() {
               <span>Inference Engine</span>
               <Badge variant="outline" className="text-[10px] font-mono">Server-Side</Badge>
             </CardDescription>
-            <CardTitle className="text-base font-semibold">Groq API Architecture</CardTitle>
+            <CardTitle className="text-base font-semibold">OpenAI Responses API</CardTitle>
           </CardHeader>
           <CardContent className="space-y-1.5 text-xs text-muted-foreground">
             <div className="flex justify-between py-1 border-b border-border/50">
-              <span>Primary Model</span>
-              <span className="font-mono font-medium text-foreground">openai/gpt-oss-120b</span>
+              <span>Default Model</span>
+              <span className="font-mono font-medium text-foreground">gpt-4o-mini</span>
             </div>
             <div className="flex justify-between py-1 border-b border-border/50">
-              <span>Fallback Model</span>
-              <span className="font-mono font-medium text-foreground">openai/gpt-oss-20b</span>
+              <span>Configurable Key</span>
+              <span className="font-mono font-medium text-foreground">OPENAI_MODEL</span>
             </div>
             <div className="flex justify-between py-1">
               <span>Key Confidentiality</span>
@@ -187,11 +187,10 @@ export default function DashboardPage() {
       {/* Architectural Guidelines Note */}
       <Alert variant="info" className="border-border">
         <Info className="h-4 w-4" />
-        <AlertTitle>Phase 1 Foundation Operational</AlertTitle>
+        <AlertTitle>Phase 2 Topic Analysis Active</AlertTitle>
         <AlertDescription className="text-xs leading-relaxed">
-          The application shell, navigation, design tokens, and module boundaries are verified.
-          Real server-side Groq inference will be integrated in Phase 2, followed by PDF text extraction
-          in Phase 3. No mocked or simulated data is used.
+          Server-side OpenAI Responses API integration is active with modular provider architecture.
+          Submit any academic topic in the New Research workspace to generate a structured, verifiable report.
         </AlertDescription>
       </Alert>
     </div>

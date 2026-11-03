@@ -1,7 +1,7 @@
 # AI Research Analyzer — System Architecture
 
 > **Document Status:** Active / Authoritative  
-> **Last Updated:** 2026-11-03  
+> **Last Updated:** 2026-11-03 (Updated for OpenAI Responses API Migration)  
 > **Target Framework:** Next.js 15 (App Router) + TypeScript + Tailwind CSS
 
 ---
@@ -9,14 +9,15 @@
 ## 1. Architectural Principles
 
 1. **Separation of Concerns:** Strict layer isolation between presentation (`src/app`, `src/components`), domain features (`src/features/*`), infrastructure/services (`src/lib/*`), and shared types/contracts (`src/types/*`).
-2. **Server-Side AI Confidentiality:** All interactions with the Groq API reside solely on the server. No client component or browser bundle shall ever import or receive `GROQ_API_KEY`.
-3. **Evidence-Grounded Reporting & Zero Hallucination:** Claims produced by the model must be explicitly categorized:
+2. **Server-Side AI Confidentiality:** All interactions with LLM APIs reside solely on the server. No client component or browser bundle shall ever import or receive `OPENAI_API_KEY`.
+3. **Modular AI Provider Abstraction:** Inference services implement an abstract `AIProvider` interface (`src/lib/ai/provider.ts`), decoupling the application from specific AI vendors. OpenAI Responses API (`client.responses.create()`) is the primary provider, with pluggable support for future providers.
+4. **Evidence-Grounded Reporting & Zero Hallucination:** Claims produced by the model must be explicitly categorized:
    - `from_document`: Grounded with extracted text and page numbers.
    - `retrieved_source`: Backed by an external source.
    - `ai_interpretation`: Analytical extrapolation by the model.
    - `not_established`: Stating explicitly when evidence is missing.
-4. **Untrusted Data Boundary:** Uploaded PDFs and web content are treated strictly as untrusted data inputs. They are fed into model prompts with explicit isolation delimiters and defensive system prompting to prevent prompt injection.
-5. **Progressive Resilience:** Failures in external LLM calls, rate limits, or malformed outputs are gracefully caught and presented as actionable errors without crashing the client application.
+5. **Untrusted Data Boundary:** Uploaded PDFs, web content, and user topics are treated strictly as untrusted data inputs. They are fed into model prompts with explicit XML isolation delimiters and defensive system prompting to prevent prompt injection.
+6. **Progressive Resilience:** Failures in external LLM calls, quota limits, rate limits, or malformed outputs are caught by standardized domain errors (`AIAuthError`, `AIRateLimitError`, `AIQuotaExceededError`, `AITimeoutError`, `AIResponseParseError`) and returned as actionable envelopes.
 
 ---
 
@@ -28,13 +29,13 @@
         ▼
 [ Presentation & Route Layer ]
    - src/app/ (Next.js App Router: layouts, pages, loading/error boundaries)
-   - src/components/ui/ (Atomic, accessible primitive components)
+   - src/components/ui/ (Atomic, accessible Swiss Modernism 2.0 components)
    - src/components/layout/ (App shell, navigation, header, sidebar)
         │
         ▼
 [ Domain Feature Layer ]
-   - src/features/research/ (Topic analysis forms, scope preview, report view)
-   - src/features/pdf-analysis/ (Upload dropzone, extraction preview, report view)
+   - src/features/research/ (Topic analysis forms, report viewer, evidence badges)
+   - src/features/pdf-analysis/ (Upload dropzone, extraction preview, coverage stats)
    - src/features/document-chat/ (Grounded Q&A panel, citation viewer)
    - src/features/projects/ (Project listing, cards, status)
         │
@@ -48,9 +49,11 @@
         ▼
 [ Core Services & Processing Engine ]
    - src/lib/ai/
-       ├── groq.service.ts       (Groq SDK wrapper, rate limiting, error handling)
-       ├── prompts.ts            (Defensive prompt templates, evidence schema prompts)
-       └── parsers.ts            (Structured JSON output validation with Zod)
+       ├── provider.ts           (Abstract AIProvider interface & domain error classes)
+       ├── openai.provider.ts    (OpenAI Responses API client.responses.create wrapper)
+       ├── prompts.ts            (Defensive prompt templates, XML boundaries, schema instructions)
+       ├── parsers.ts            (Markdown fence sanitization & Zod schema validation)
+       └── index.ts              (Provider factory: getAIProvider())
    - src/lib/pdf/
        ├── extractor.ts          (PDF parsing, page boundary preservation)
        ├── chunker.ts            (Context-aware text chunking with metadata)
@@ -59,13 +62,12 @@
         ▼
 [ Data Access & Persistence Layer ]
    - src/lib/db/
-       ├── client.ts             (Database client: local adapter or Supabase)
-       ├── repository.ts         (Abstract repository pattern for projects & documents)
-       └── storage.ts            (Document storage: local temp storage / secure bucket)
+       ├── adapter.ts            (In-memory / file / Supabase adapter interface)
+       └── memory-store.ts       (Phase 1-5 development store)
         │
         ▼
 [ Shared Validation, Types & Utils ]
-   - src/lib/validation/         (Zod schemas for inputs, outputs, configs)
+   - src/lib/validation/         (Zod schemas for inputs, outputs, env)
    - src/types/                  (Domain types, report contracts, API types)
    - src/lib/utils/              (Formatting, styling helpers, cn utility)
 ```
@@ -110,68 +112,48 @@ e:\Research Analyzer\
 │   │   └── error.tsx / not-found.tsx   # Global error handling & 404 boundaries
 │   │
 │   ├── components/                     # Reusable UI component library
-│   │   ├── ui/                         # Design system primitives (buttons, inputs, cards, dialogs)
-│   │   └── layout/                     # App shell components (sidebar, header, mobile nav)
+│   │   ├── ui/                         # Design system primitives (button, badge, card, input, textarea, alert, skeleton)
+│   │   └── layout/                     # App shell components (sidebar, header, app-shell)
 │   │
 │   ├── features/                       # Domain-driven feature modules
-│   │   ├── research/                   # Topic analysis forms, report rendering, evidence labels
-│   │   │   ├── components/
-│   │   │   ├── hooks/
-│   │   │   └── types/
-│   │   ├── pdf-analysis/               # PDF upload dropzone, processing status, coverage stats
-│   │   │   ├── components/
-│   │   │   ├── hooks/
-│   │   │   └── types/
-│   │   ├── document-chat/              # Grounded Q&A conversation panel, citation links
-│   │   │   ├── components/
-│   │   │   └── hooks/
-│   │   └── projects/                   # Project lists, empty states, project cards
-│   │       ├── components/
-│   │       └── hooks/
+│   │   └── research/                   # Topic analysis forms, report viewer, evidence badges
+│   │       └── components/
+│   │           └── report-viewer.tsx
 │   │
 │   ├── lib/                            # Infrastructure, core services & utilities
 │   │   ├── ai/                         # Server-side LLM inference
-│   │   │   ├── groq.service.ts         # Groq client, model dispatch, retry & timeout
+│   │   │   ├── provider.ts             # AIProvider contract & domain error classes
+│   │   │   ├── openai.provider.ts      # OpenAI Responses API client implementation
 │   │   │   ├── prompts.ts              # Defensive prompts with evidence isolation
-│   │   │   └── parsers.ts              # Schema-validated JSON response parser
-│   │   ├── pdf/                        # PDF extraction & text chunking
-│   │   │   ├── extractor.ts            # Page-aware text extraction
-│   │   │   ├── chunker.ts              # Context chunking with page metadata
-│   │   │   └── validator.ts            # PDF MIME, size & header validation
-│   │   ├── db/                         # Persistence abstraction
-│   │   │   ├── adapter.ts              # In-memory / file / Supabase adapter interface
-│   │   │   └── memory-store.ts         # Phase 1-5 development store
+│   │   │   ├── parsers.ts              # Schema-validated JSON response parser
+│   │   │   └── index.ts                # Provider factory singleton
 │   │   ├── validation/                 # Shared validation schemas (Zod)
-│   │   │   ├── env.schema.ts           # GROQ_API_KEY, GROQ_MODEL, limits validation
-│   │   │   ├── research.schema.ts      # Topic analysis request & report schemas
-│   │   │   └── document.schema.ts      # PDF upload & chat query schemas
-│   │   └── utils/                      # General utilities (tailwind merge, formatting)
+│   │   │   ├── env.schema.ts           # OPENAI_API_KEY, OPENAI_MODEL validation
+│   │   │   └── research.schema.ts      # Topic request & report Zod contracts
+│   │   └── utils.ts                    # General utilities (cn, formatBytes, formatDate)
 │   │
 │   └── types/                          # Core TypeScript domain definitions
-│       ├── research.ts                 # ResearchReport, EvidenceLabel, AnalysisSection
+│       ├── research.ts                 # ResearchReport, EvidenceLabel, FindingItem
 │       ├── document.ts                 # DocumentMetadata, ExtractedPage, DocumentChunk
 │       ├── api.ts                      # Standard ApiResponse<T>, ApiError
 │       └── chat.ts                     # ChatMessage, CitationReference
 │
 ├── tests/                              # Automated test suites
-│   ├── unit/                           # Pure function tests (chunker, parsers, validators)
-│   │   ├── pdf-validator.test.ts
-│   │   ├── chunker.test.ts
-│   │   └── report-parser.test.ts
-│   ├── integration/                    # Service-level integration tests
-│   │   ├── groq-service.test.ts
-│   │   └── pdf-extractor.test.ts
-│   └── fixtures/                       # Test assets (sample PDFs, mocked LLM responses)
-│       ├── sample-valid.pdf
-│       ├── sample-empty.pdf
-│       └── mock-groq-report.json
+│   ├── unit/                           # Pure function tests (parsers, prompts)
+│   │   ├── parsers.test.ts
+│   │   └── prompts.test.ts
+│   ├── integration/                    # Service-level integration tests (OpenAI provider)
+│   │   └── openai-provider.test.ts
+│   ├── security/                       # Secret boundary & isolation tests
+│   │   └── secret-isolation.test.ts
+│   └── fixtures/                       # Test assets (mock reports, sample payloads)
+│       └── mock-openai-report.json
 │
 ├── public/                             # Static public assets
 ├── .env.example                        # Template for environment variables (no secrets)
 ├── package.json                        # Dependencies and scripts
 ├── tsconfig.json                       # Strict TypeScript configuration
-├── tailwind.config.ts                  # Tailwind configuration & design tokens
-└── next.config.ts                      # Next.js server configuration
+└── tailwind.config.ts                  # Tailwind configuration & design tokens
 ```
 
 ---
@@ -183,40 +165,16 @@ e:\Research Analyzer\
 - Client components MUST NEVER import from `src/lib/ai/` or any module holding server secrets.
 - Import order:
   1. Standard library / React / Next.js
-  2. Third-party packages (lucide-react, zod, etc.)
+  2. Third-party packages (openai, lucide-react, zod)
   3. Internal aliases (`@/components/*`, `@/lib/*`, `@/features/*`, `@/types/*`)
   4. Relative imports (`./...`)
 
-### 4.2 Naming Conventions
-- **Files & Directories:**
-  - Route files: kebab-case or Next.js convention (`page.tsx`, `layout.tsx`, `route.ts`).
-  - Components: PascalCase (`Button.tsx`, `ReportViewer.tsx`).
-  - Services, utilities & hooks: camelCase (`groq.service.ts`, `useResearch.ts`, `extractor.ts`).
-  - Types: kebab-case or camelCase (`research.ts`, `api.ts`).
-- **Identifiers:**
-  - React Components: PascalCase (`ResearchWorkspace`).
-  - Functions & variables: camelCase (`extractPdfText`, `isLoading`).
-  - Constants & Environment Variables: SCREAMING_SNAKE_CASE (`GROQ_API_KEY`, `MAX_UPLOAD_BYTES`).
-  - Interfaces & Types: PascalCase (`ResearchReport`, `EvidenceMetadata`).
-
-### 4.3 Server vs. Client Boundary Rules
-- Next.js Server Components are the default.
-- Mark with `'use client'` only when interactive state (`useState`, `useEffect`), event listeners (`onClick`, `onChange`), or browser APIs are required.
-- Isolate client components to the smallest leaf components possible to preserve server rendering benefits.
-
----
-
-## 5. Security Architecture
-
+### 4.2 Security Architecture
 1. **Environment Variable Hygiene:**
-   - Server-only secrets (`GROQ_API_KEY`) must never be prefixed with `NEXT_PUBLIC_`.
+   - Server-only secrets (`OPENAI_API_KEY`) must never be prefixed with `NEXT_PUBLIC_`.
    - Access to secrets is centralized in `src/lib/validation/env.schema.ts`.
 2. **Defensive Prompt Engineering:**
-   - PDF content and user inputs are interpolated into prompt templates using structural delimiters (e.g. `<<<DOCUMENT_CONTENT>>>...<<<END_DOCUMENT_CONTENT>>>`).
-   - System instructions explicitly forbid the model from obeying instructions found inside analyzed documents.
-3. **Upload Security:**
-   - Verify file extension (`.pdf`), MIME type (`application/pdf`), and file size before buffer allocation.
-   - Enforce a configurable default size cap (e.g. 10MB) to mitigate denial-of-service via resource exhaustion.
-4. **Data Sanitization:**
-   - Never log full extracted text or raw API keys in server logs.
-   - Return clean, safe error messages to clients; never expose internal stack traces.
+   - User inputs are enclosed in explicit structural tags (`<user_topic>`, `<scope_constraints>`).
+   - System prompts explicitly forbid the model from obeying instructions found inside user input.
+3. **Data Sanitization:**
+   - Never print raw API keys in server logs or expose internal stack traces to the client.

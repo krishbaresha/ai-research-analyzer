@@ -76,7 +76,7 @@ export default async function DocumentWorkspacePage({
                 Document Synthesis & Evidence Matrix
               </CardTitle>
               <CardDescription className="text-xs">
-                Exhibiting how Groq analysis results render with explicit evidence citations.
+                Exhibiting how structured analysis results render with explicit evidence citations.
               </CardDescription>
             </CardHeader>
 
@@ -201,7 +201,7 @@ export default async function DocumentWorkspacePage({
                     Grounded Conversation Ready
                   </div>
                   <p className="text-[11px] text-muted-foreground leading-relaxed">
-                    Once PDF text extraction (Phase 3) and Groq inference (Phase 2 & 5) are active,
+                    Once PDF text extraction (Phase 3) and server-side inference (Phase 2 & 5) are active,
                     answers will be generated exclusively from retrieved passages with page citations.
                   </p>
                 </div>

@@ -124,10 +124,10 @@ export function Sidebar({ className }: { className?: string }) {
         <div className="rounded-lg border border-border bg-background/50 p-3">
           <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
             <Cpu className="h-3.5 w-3.5 text-primary" />
-            <span>Configured Model</span>
+            <span>AI Provider</span>
           </div>
           <div className="mt-1 text-[11px] font-mono text-muted-foreground truncate">
-            openai/gpt-oss-120b
+            OpenAI Responses API
           </div>
           <div className="mt-2.5 flex items-center justify-between text-[10px] text-muted-foreground">
             <span className="flex items-center gap-1.5">
@@ -136,7 +136,7 @@ export function Sidebar({ className }: { className?: string }) {
             </span>
             <span className="flex items-center gap-1 font-mono">
               <Layers className="h-3 w-3" />
-              Phase 1
+              Phase 2
             </span>
           </div>
         </div>
