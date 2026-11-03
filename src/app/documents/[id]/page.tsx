@@ -1,11 +1,10 @@
 import Link from "next/link";
 import {
-  MessageSquare,
   ArrowLeft,
+  AlertTriangle,
   BookOpen,
   CheckCircle2,
-  AlertTriangle,
-  Layers,
+  MessageSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,6 +17,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { documentStore } from "@/lib/storage/document-store";
+import { DocumentViewer } from "@/features/pdf-analysis/components/document-viewer";
 
 interface DocumentWorkspaceProps {
   params: Promise<{ id: string }>;
@@ -28,7 +28,6 @@ export default async function DocumentWorkspacePage({
 }: DocumentWorkspaceProps) {
   const { id } = await params;
 
-  // If this is a real document ID, retrieve it from the memory store
   const isSample = id === "sample";
   const document = isSample ? null : await documentStore.get(id);
 
@@ -51,9 +50,44 @@ export default async function DocumentWorkspacePage({
     );
   }
 
+  // If a real document is present, render the interactive DocumentViewer
+  if (document) {
+    return (
+      <div className="space-y-6 animate-in fade-in duration-300">
+        <div className="flex items-center justify-between border-b border-border pb-4">
+          <div className="space-y-1">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              <span>Back to Dashboard</span>
+            </Link>
+            <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+              Workspace: {document.metadata.sanitizedFilename}
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              Evidence-grounded document analysis and page-level citation exploration.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Link href="/new?mode=document">
+              <Button size="sm" variant="outline" className="text-xs">
+                Upload Another
+              </Button>
+            </Link>
+          </div>
+        </div>
+
+        <DocumentViewer document={document} />
+      </div>
+    );
+  }
+
+  // Fallback blueprint for sample shell
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
-      {/* Navigation & Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4">
         <div className="space-y-1">
           <Link
@@ -65,146 +99,86 @@ export default async function DocumentWorkspacePage({
           </Link>
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-              {document ? document.metadata.sanitizedFilename : "Document Intelligence Shell"}
+              Document Intelligence Shell
             </h2>
             <Badge variant="outline" className="font-mono text-[11px]">
-              {document ? `Pages: ${document.metadata.pageCount}` : "Phase 1 Shell"}
+              Phase 1 Shell
             </Badge>
-            {document?.metadata.isScanned && (
-              <Badge variant="destructive" className="text-[10px]">
-                Scanned (OCR Required)
-              </Badge>
-            )}
           </div>
           <p className="text-xs text-muted-foreground">
-            {document
-              ? `Extracted ${document.metadata.totalWordCount.toLocaleString()} words across ${document.metadata.pageCount} pages.`
-              : "Structured analysis workspace illustrating evidence boundaries and grounded document Q&A."}
+            Structured analysis workspace illustrating evidence boundaries and grounded document Q&A.
           </p>
         </div>
 
         <div className="flex items-center gap-2">
           <Link href="/new?mode=document">
             <Button size="sm" variant="outline" className="text-xs">
-              Upload Another
+              Upload PDF
             </Button>
           </Link>
         </div>
       </div>
 
-      {/* Main Workspace Layout (2 Columns) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Column: Extracted Document Content / Preview (7 cols) */}
         <div className="lg:col-span-7 space-y-6">
-          {document ? (
-            <Card>
-              <CardHeader className="border-b border-border pb-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Extracted Text Streams
-                  </span>
-                  <Badge variant="from_document" className="text-[10px]">
-                    Phase 3 Verified
-                  </Badge>
-                </div>
-                <CardTitle className="text-lg font-bold mt-1 text-foreground">
-                  Page Boundaries & Content
-                </CardTitle>
-                <CardDescription className="text-xs">
-                  Original: {document.metadata.originalFilename} ({(document.metadata.fileSizeBytes / 1024).toFixed(1)} KB)
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4 pt-4">
-                {document.metadata.isScanned && (
-                  <Alert variant="warning">
-                    <AlertTriangle className="h-4 w-4 text-amber-600" />
-                    <AlertTitle className="text-xs font-bold">Scanned Document</AlertTitle>
-                    <AlertDescription className="text-xs mt-1">
-                      This PDF contains image-based pages with minimal digital text. OCR is required for full extraction.
-                    </AlertDescription>
-                  </Alert>
-                )}
+          <Card>
+            <CardHeader className="border-b border-border pb-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Report Structure Blueprint
+                </span>
+                <Badge variant="from_document" className="text-[10px]">
+                  evidence-grounded
+                </Badge>
+              </div>
+              <CardTitle className="text-lg font-bold mt-1 text-foreground">
+                Document Synthesis & Evidence Matrix
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Exhibiting how structured analysis results render with explicit evidence citations.
+              </CardDescription>
+            </CardHeader>
 
-                <div className="space-y-3 max-h-[600px] overflow-y-auto pr-1">
-                  {document.pages.map((p) => (
-                    <div key={p.pageNumber} className="rounded-lg border border-border p-3.5 space-y-2 bg-card">
-                      <div className="flex items-center justify-between border-b border-border/50 pb-1.5">
-                        <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                          <Layers className="h-3.5 w-3.5 text-primary" />
-                          <span>Page {p.pageNumber}</span>
-                        </span>
-                        <span className="text-[11px] text-muted-foreground font-mono">
-                          {p.wordCount} words
-                        </span>
-                      </div>
-                      <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap font-sans">
-                        {p.text || "(No digital text detected on this page)"}
-                      </p>
-                    </div>
-                  ))}
+            <CardContent className="space-y-6 pt-6">
+              <div className="space-y-2">
+                <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                  <BookOpen className="h-3.5 w-3.5 text-primary" />
+                  <span>Executive Summary</span>
+                </h4>
+                <div className="rounded-lg border border-border bg-card p-4 text-xs leading-relaxed text-foreground">
+                  The analysis report contract organizes paper insights into verified categories.
+                  Every statement is tagged with its evidence origin: document content,
+                  retrieved web literature, or AI analytical interpretation.
                 </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card>
-              <CardHeader className="border-b border-border pb-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Report Structure Blueprint
-                  </span>
-                  <Badge variant="from_document" className="text-[10px]">
-                    evidence-grounded
-                  </Badge>
-                </div>
-                <CardTitle className="text-lg font-bold mt-1 text-foreground">
-                  Document Synthesis & Evidence Matrix
-                </CardTitle>
-                <CardDescription className="text-xs">
-                  Exhibiting how structured analysis results render with explicit evidence citations.
-                </CardDescription>
-              </CardHeader>
+              </div>
 
-              <CardContent className="space-y-6 pt-6">
+              <div className="space-y-3">
+                <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                  <span>Key Findings & Evidence Attribution</span>
+                </h4>
+
                 <div className="space-y-2">
-                  <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                    <BookOpen className="h-3.5 w-3.5 text-primary" />
-                    <span>Executive Summary</span>
-                  </h4>
-                  <div className="rounded-lg border border-border bg-card p-4 text-xs leading-relaxed text-foreground">
-                    The analysis report contract organizes paper insights into verified categories.
-                    Every statement is tagged with its evidence origin: document content,
-                    retrieved web literature, or AI analytical interpretation.
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-                    <span>Key Findings & Evidence Attribution</span>
-                  </h4>
-                  <div className="space-y-2">
-                    <div className="rounded-lg border border-border p-3.5 space-y-2 bg-card">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-foreground">
-                          Document-Extracted Fact
-                        </span>
-                        <Badge variant="from_document" className="text-[10px]">
-                          From Document (p. 4)
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        &ldquo;Multi-head attention allows the model to jointly attend to information
-                        from different representation subspaces at different positions.&rdquo;
-                      </p>
+                  <div className="rounded-lg border border-border p-3.5 space-y-2 bg-card">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-foreground">
+                        Document-Extracted Fact
+                      </span>
+                      <Badge variant="from_document" className="text-[10px]">
+                        From Document (p. 4)
+                      </Badge>
                     </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      &ldquo;Multi-head attention allows the model to jointly attend to information
+                      from different representation subspaces at different positions.&rdquo;
+                    </p>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Right Column: Grounded Q&A Assistant Shell (5 cols) */}
         <div className="lg:col-span-5 space-y-4">
           <Card className="flex flex-col h-full min-h-[500px]">
             <CardHeader className="border-b border-border pb-3">
@@ -232,7 +206,7 @@ export default async function DocumentWorkspacePage({
                     Grounded Conversation Ready
                   </div>
                   <p className="text-[11px] text-muted-foreground leading-relaxed">
-                    PDF text extraction (Phase 3) is now active. Document-grounded Q&A activates in Phase 5.
+                    Once document analysis is performed, document-grounded Q&A activates in Phase 5.
                   </p>
                 </div>
               </div>

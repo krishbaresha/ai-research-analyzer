@@ -1,4 +1,5 @@
-import { ResearchReport } from "@/types/research";
+import { ResearchReport, DocumentAnalysisReport } from "@/types/research";
+import { ExtractedDocument } from "@/types/document";
 
 export class AIServiceError extends Error {
   public readonly code: string;
@@ -61,6 +62,13 @@ export interface TopicAnalysisOptions {
   signal?: AbortSignal;
 }
 
+export interface DocumentAnalysisOptions {
+  documentId: string;
+  document: ExtractedDocument;
+  focusArea?: string;
+  signal?: AbortSignal;
+}
+
 export interface AIProviderResult<T> {
   data: T;
   rawOutput?: string;
@@ -70,11 +78,12 @@ export interface AIProviderResult<T> {
 
 /**
  * Modular AI Provider interface.
- * Allows switching providers (OpenAI, Anthropic, etc.) without altering business logic.
+ * Decouples business logic from specific model providers.
  */
 export interface AIProvider {
   readonly name: string;
   readonly defaultModel: string;
 
   analyzeTopic(options: TopicAnalysisOptions): Promise<AIProviderResult<ResearchReport>>;
+  analyzeDocument(options: DocumentAnalysisOptions): Promise<AIProviderResult<DocumentAnalysisReport>>;
 }

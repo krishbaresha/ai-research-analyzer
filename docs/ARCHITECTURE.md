@@ -1,7 +1,7 @@
 # AI Research Analyzer — System Architecture
 
 > **Document Status:** Active / Authoritative  
-> **Last Updated:** 2026-11-03 (Phase 3: PDF Upload & Reliable Text Extraction)  
+> **Last Updated:** 2026-11-03 (Phase 4: PDF Analysis & Evidence-Grounded Reports)  
 > **Target Framework:** Next.js 15 (App Router) + TypeScript + Tailwind CSS
 
 ---
@@ -38,7 +38,7 @@
         ▼
 [ Domain Feature Layer ]
    - src/features/research/ (Topic analysis forms, report viewer, evidence badges)
-   - src/features/pdf-analysis/ (Upload dropzone, page-by-page DocumentViewer, scanned warnings)
+   - src/features/pdf-analysis/ (Upload dropzone, page-by-page DocumentViewer, DocumentReportViewer, interactive citation navigation)
    - src/features/document-chat/ (Grounded Q&A panel shell - Phase 5)
    - src/features/projects/ (Project listing, cards, status)
         │
@@ -46,6 +46,7 @@
 [ Server Boundary: API Handlers & Route Handlers ]
    - src/app/api/documents/upload/route.ts      (POST: multipart upload & extraction)
    - src/app/api/documents/[id]/route.ts        (GET: document & extracted pages retrieval)
+   - src/app/api/documents/[id]/analyze/route.ts (POST: grounded document analysis via OpenAI Responses API)
    - src/app/api/research/analyze-topic/route.ts (POST: topic analysis via OpenAI Responses API)
    - src/app/api/health/route.ts                (GET: health check & config diagnostics)
         │
@@ -54,6 +55,7 @@
    - src/lib/pdf/
        ├── validator.ts          (Magic bytes %PDF-, size cap, filename sanitization, safe ID)
        ├── extractor.ts          (unpdf page-by-page extraction, scanned detection, word counting)
+       ├── budgeter.ts           (Context-aware page budgeting, coverage metrics, XML injection sanitization)
        └── index.ts              (Barrel exports)
    - src/lib/ai/
        ├── provider.ts           (Abstract AIProvider interface & domain error classes)
@@ -69,9 +71,9 @@
         │
         ▼
 [ Shared Validation, Types & Utils ]
-   - src/lib/validation/         (Zod schemas for inputs, outputs, env)
+   - src/lib/validation/         (Zod schemas for topic & document analysis, env)
    - src/types/document.ts       (ExtractedPage, DocumentMetadata, ExtractedDocument)
-   - src/types/research.ts       (ResearchReport, KeyFinding, DetailedSection)
+   - src/types/research.ts       (Topic ResearchReport & DocumentAnalysisReport, KeyFinding, DetailedSection)
    - src/lib/utils.ts            (Tailwind utility merge, formatting helpers)
 ```
 
@@ -105,20 +107,20 @@ e:\Research Analyzer\
 │   │   ├── layout/                    # AppShell, Sidebar, Header
 │   │   └── ui/                        # Button, Card, Badge (as span), Alert, Textarea, Skeleton
 │   ├── features/
-│   │   ├── pdf-analysis/components/   # DocumentViewer (page-by-page reader, stats, scanned banner)
+│   │   ├── pdf-analysis/components/   # DocumentViewer, DocumentReportViewer, interactive citations
 │   │   └── research/components/       # ReportViewer, SectionCard, EvidenceBadge
 │   ├── lib/
-│   │   ├── pdf/                       # PDF validator, unpdf extractor, scanned detector
+│   │   ├── pdf/                       # PDF validator, unpdf extractor, budgeter
 │   │   ├── storage/                   # DocumentStore in-memory repository
 │   │   ├── ai/                        # OpenAI Responses provider, prompts, and parsers
 │   │   ├── validation/                # Zod schemas (research.schema.ts, env.schema.ts)
 │   │   └── utils.ts                   # Tailwind utility merge
 │   └── types/                         # TypeScript interfaces (document.ts, research.ts, api.ts)
-└── tests/                             # Vitest test suite (38 tests)
+└── tests/                             # Vitest test suite (56 tests)
     ├── fixtures/                      # Mock PDF buffers & JSON reports
-    ├── integration/                   # Document upload & OpenAI provider integration tests
-    ├── security/                      # Secret isolation & Phase 3 zero-LLM boundary audit
-    └── unit/                          # PDF validator, PDF extractor, prompts, and parser tests
+    ├── integration/                   # Document upload, document analysis & OpenAI provider integration tests
+    ├── security/                      # Secret isolation & boundary audit
+    └── unit/                          # PDF validator, PDF extractor, budgeter, prompts, and parser tests
 ```
 
 ---
@@ -134,3 +136,23 @@ e:\Research Analyzer\
    - Client MIME types are never trusted alone; magic bytes `%PDF-` are verified within the file buffer.
    - Filenames are sanitized using `path.posix.basename`, removing path traversal sequences (`..`), slashes, and control characters.
    - Internal document IDs are generated securely (`doc_${timestamp}_${random}`).
+
+---
+
+## 5. Grounded PDF Analysis & Context Budgeting Standards (Phase 4)
+
+1. **Context-Aware Budgeting:**
+   - Long documents exceeding budget (`DEFAULT_MAX_CHAR_BUDGET = 60,000` chars) are budgeted into an introductory window (40%), conclusion window (35%), and middle sampling window (25%).
+   - Exact page numbers are strictly preserved in budgeted passages.
+   - Transparent coverage metrics (`coveragePercentage`, `isPartialCoverage`, `analyzedPages`) are computed and validated.
+2. **Prompt Injection Defense:**
+   - Document text is treated as untrusted data.
+   - Characters `<` and `>` are sanitized within passages.
+   - Passages are enclosed in `<document_passage page="N">` tags.
+   - System prompts enforce strict anti-override rules and prohibit inventing page numbers, citations, DOIs, or URLs.
+3. **Evidence Attribution & Verifiable Citations:**
+   - `from_document`: Directly grounded claims citing exact analyzed pages in `pageReferences: number[]`.
+   - `ai_interpretation`: Contextual or analytical synthesis by the model.
+   - `not_established`: Unverified or unaddressed dimensions.
+4. **Interactive Citation UX:**
+   - Clicking citation badges in the analysis report triggers tab switching and smooth scrolling to the exact cited page in the Document Workspace viewer.

@@ -13,8 +13,8 @@
 | **Phase 1** | Foundation, App Shell, and Design System | **COMPLETED** | 2026-11-03 |
 | **Phase 2** | Server-Side OpenAI Integration (Responses API) & Topic-Based Analysis | **COMPLETED** | 2026-11-03 |
 | **Phase 3** | PDF Upload and Reliable Text Extraction | **COMPLETED** | 2026-11-03 |
-| **Phase 4** | PDF Analysis and Evidence-Grounded Reports | Planned (Next) | — |
-| **Phase 5** | Document Chat (Grounded Q&A) | Planned | — |
+| **Phase 4** | PDF Analysis and Evidence-Grounded Reports | **COMPLETED** | 2026-11-03 |
+| **Phase 5** | Document Chat (Grounded Q&A) | Planned (Next) | — |
 | **Phase 6** | Persistence, Projects, and History | Planned | — |
 | **Phase 7** | Multi-Document Comparison and RAG Improvements | Planned | — |
 | **Phase 8** | Web Research and External Sources | Planned | — |
@@ -75,3 +75,59 @@
 
 ### 3. Next Phase Readiness
 - Ready for **Phase 4: PDF Analysis and Evidence-Grounded Reports**.
+
+---
+
+## Phase 4: PDF Analysis and Evidence-Grounded Research Reports (Completed)
+
+### 1. Requirements Delivered
+- **Document Store Integration:**
+  - Connected the analytical engine directly to the ephemeral `DocumentStore` abstraction (`documentStore.get(documentId)`).
+  - Validates document presence, throwing standard `404 NOT_FOUND` for expired or missing documents.
+  - Inspects document extraction metrics and blocks unreadable scanned/image-only PDFs (`422 UNPROCESSABLE_ENTITY`, code `OCR_REQUIRED`).
+- **Context-Aware Long Document Budgeter (`src/lib/pdf/budgeter.ts`):**
+  - Designed and implemented a context-budgeting algorithm with a conservative ceiling of 60,000 characters (~15,000 tokens) to guarantee prompt reliability and prevent "lost-in-the-middle" attention degradation.
+  - Preserves exact 1-indexed page boundaries across all sampled passages.
+  - Automatically computes and transparently reports coverage metrics: `totalPages`, `analyzedPagesCount`, `analyzedPages`, `coveragePercentage`, and `isPartialCoverage`.
+  - For short/medium papers (< 60,000 chars), processes 100% of pages.
+  - For long documents exceeding budget, employs weighted strategic sampling: opening sections/abstract (40%), conclusion/discussion (35%), and evenly sampled methodology/results pages (25%).
+- **Prompt Injection Defense & Structural Boundary Envelopes (`src/lib/ai/prompts.ts`):**
+  - Treats all PDF content as untrusted input data.
+  - Sanitizes angle brackets (`<`, `>`) in passage streams to prevent prompt template escape attacks.
+  - Wraps each extracted page in defensive `<document_passage page="N">` XML envelopes.
+  - Strict system instructions mandate valid JSON output, prohibit prompt modification, and strictly forbid fabricating citations, DOIs, URLs, or non-existent page numbers.
+- **Evidence-Grounded Reporting Contracts & Zod Schemas:**
+  - Updated `src/types/research.ts` with `DocumentAnalysisReport`, `DocumentAnalysisOverview`, `ObjectiveItem`, `DetailedSection`, `MethodologyAssessment`, and `ConceptItem`.
+  - Defined strict Zod schemas in `src/lib/validation/research.schema.ts` ensuring `pageReferences: z.array(z.number().int().positive())` on all document-backed findings.
+  - Distinguishes claims via `evidenceStatus`: `from_document` (grounded with exact page numbers), `ai_interpretation` (analytical synthesis), and `not_established` (unaddressed or missing).
+- **Official OpenAI Responses API Integration (`src/lib/ai/openai.provider.ts`):**
+  - Implemented `analyzeDocument(options: DocumentAnalysisOptions)` on `AIProvider` and `OpenAIProvider`.
+  - Uses official `client.responses.create()` with robust fallback to `client.chat.completions.create()`.
+  - Maps external errors cleanly to domain errors (`AIAuthError`, `AIRateLimitError`, `AIQuotaExceededError`, `AITimeoutError`, `AIResponseParseError`).
+- **REST API Route (`POST /api/documents/[id]/analyze`):**
+  - Accepts optional `focusArea` filter.
+  - Returns `200 OK` with full validated `DocumentAnalysisReport` payload.
+  - Accurately tracks inference `processingTimeMs` and returns active model identifier in metadata.
+- **Frontend Workspace & Interactive Citation Navigation:**
+  - Created `DocumentReportViewer` (`src/features/pdf-analysis/components/document-report-viewer.tsx`) with 12 structured report sections: Document Overview, Executive Summary, Research Objectives, Key Findings, Detailed Analysis, Methodology Assessment, Important Concepts, Strengths/Weaknesses, Limitations, Research Gaps, Conclusion, and Suggested Further Research.
+  - Clickable page citation pills (`p. 1`, `p. 4`) with smooth navigation: clicking any citation switches to the "Extracted Pages" tab and scrolls directly to the cited page.
+  - Analysis initiation UI in `src/features/pdf-analysis/components/document-viewer.tsx` with focus area input and live progress stepper.
+  - Partial coverage alert banner when documents exceed context budget, detailing analyzed page ranges.
+  - Markdown copy export functionality.
+
+### 2. Quality Assurance & Test Verification
+- **Automated Vitest Suite (56 tests passing across 11 files):**
+  - `tests/unit/document-budgeter.test.ts` (4 tests): Full coverage for short PDFs, weighted sampling for large documents, empty document error handling, XML character sanitization.
+  - `tests/unit/document-prompts.test.ts` (3 tests): XML passage envelope formatting, prompt injection defense, focus area inclusion.
+  - `tests/unit/document-parsers.test.ts` (4 tests): Clean JSON parsing, markdown code block stripping, Zod schema validation, missing field rejection.
+  - `tests/integration/document-analysis.test.ts` (7 tests): Complete end-to-end analysis lifecycle, page citation verification, partial coverage handling, scanned PDF rejection, missing document 404, invalid body handling, OpenAI error mapping.
+  - Prior suites retained and verified: `pdf-validator` (7 tests), `pdf-extractor` (6 tests), `document-upload` (5 tests), `secret-isolation` (3 tests), `parsers` (7 tests), `prompts` (4 tests), `openai-provider` (6 tests).
+- **Verification Commands:**
+  - `pnpm lint`: Zero warnings, zero errors.
+  - `pnpm type-check`: Strict mode passed with zero errors (`tsc --noEmit`).
+  - `pnpm test`: 56 / 56 tests passed.
+  - `pnpm build`: Next.js production build succeeded with all 10 routes compiled.
+
+### 3. Next Phase Readiness
+- Ready for **Phase 5: Document Chat (Grounded Q&A)**.
+- Scope boundary enforced: Phase 5 has NOT been started. Zero chat persistence or embedding models introduced.

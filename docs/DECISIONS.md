@@ -145,3 +145,32 @@
   - Robust, zero-native-dependency PDF extraction on Windows and Linux.
   - Page numbers (1-indexed) are strictly retained for analytical evidence citations.
   - Clear user transparency when an uploaded document requires OCR.
+
+---
+
+## ADR-010: Context-Aware Page Budgeting and Evidence-Grounded Page Citations
+
+- **Date:** 2026-11-03
+- **Status:** Accepted (Phase 4)
+- **Context:**
+  Academic papers and technical reports vary widely in length, from 4-page conference letters to 50+ page dissertations. Directly sending unconstrained text into OpenAI's API creates latency degradation, costs escalation, and risks "lost-in-the-middle" attention drop. Furthermore, academic research integrity requires verifiable 1-indexed page citations for every factual claim, while cleanly separating document facts from AI synthesis and unverified inferences.
+- **Decision:**
+  1. **Long-Document Budgeting Strategy (`src/lib/pdf/budgeter.ts`):**
+     - Enforce a conservative context character budget (`DEFAULT_MAX_CHAR_BUDGET = 60,000` chars, ~15k tokens) well within `gpt-4o-mini`'s 128k context window to ensure fast response times and high attention retention.
+     - For documents within budget, analyze 100% of pages (`coveragePercentage: 100`, `isPartialCoverage: false`).
+     - For documents exceeding budget, employ a weighted sampling strategy: preserve the full abstract/introduction (opening 40% of budget), conclusion/discussion (closing 35% of budget), and evenly sampled middle methodology/results pages (remaining 25%), while preserving exact 1-indexed page numbers.
+     - Report transparent coverage metrics in the report overview (`totalPages`, `analyzedPagesCount`, `analyzedPages`, `coveragePercentage`, `isPartialCoverage`).
+  2. **Untrusted Data & Prompt Injection Isolation:**
+     - PDF text is treated as untrusted data.
+     - Extracted page text is sanitized against rogue XML tags (`<`, `>`) and wrapped in defensive `<document_passage page="N">` XML envelopes.
+     - Strict system instructions forbid prompt overriding and prohibit fabricating page numbers, DOIs, URLs, or citations.
+  3. **Strict Evidence Attribution & Page Citations:**
+     - Findings derived from document passages are tagged `evidenceStatus: "from_document"` and must include non-empty `pageReferences: number[]` corresponding to the analyzed passages.
+     - Inferences or contextual extrapolations are tagged `evidenceStatus: "ai_interpretation"`.
+     - Claims without scientific basis in the text are tagged `evidenceStatus: "not_established"`.
+  4. **Interactive Citation Navigation:**
+     - The frontend report viewer renders clickable citation badges (`p. 1`, `p. 4`) that trigger smooth scrolling and tab switching to the exact cited page in the Document Workspace.
+- **Consequences:**
+  - Guaranteed predictable inference latency and bounded token usage even on large documents.
+  - Zero hallucinated citations or fabricated page numbers.
+  - Transparent user feedback when partial document sampling occurs.

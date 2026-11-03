@@ -1,5 +1,11 @@
-import { researchReportSchema, ValidatedResearchReport } from "../validation/research.schema";
+import {
+  researchReportSchema,
+  ValidatedResearchReport,
+  documentAnalysisReportSchema,
+  ValidatedDocumentAnalysisReport,
+} from "../validation/research.schema";
 import { AIResponseParseError } from "./provider";
+import { BudgetedDocument } from "../pdf/budgeter";
 
 /**
  * Strips markdown code fences (e.g. ```json ... ```) from model output.
@@ -24,7 +30,7 @@ export function sanitizeModelJsonString(raw: string): string {
 }
 
 /**
- * Parses and validates raw LLM output against the ResearchReport schema.
+ * Parses and validates raw LLM output against the ResearchReport schema (Topic Analysis).
  */
 export function parseAndValidateReport(
   rawText: string,
@@ -44,7 +50,6 @@ export function parseAndValidateReport(
   }
 
   if (typeof parsedJson === "object" && parsedJson !== null) {
-    // Inject modelId and timestamp if missing
     const record = parsedJson as Record<string, unknown>;
     if (!record.modelId) record.modelId = modelId;
     if (!record.createdAt) record.createdAt = new Date().toISOString();
@@ -58,6 +63,75 @@ export function parseAndValidateReport(
       .join("; ");
     throw new AIResponseParseError(
       `Model output failed schema validation: ${issues}`,
+      rawText
+    );
+  }
+
+  return result.data;
+}
+
+/**
+ * Parses and validates raw LLM output against the DocumentAnalysisReport schema (Phase 4).
+ */
+export function parseAndValidateDocumentReport(
+  rawText: string,
+  modelId: string,
+  documentId: string,
+  budgeted: BudgetedDocument,
+  originalFilename: string,
+  totalWordCount: number
+): ValidatedDocumentAnalysisReport {
+  const sanitized = sanitizeModelJsonString(rawText);
+
+  let parsedJson: unknown;
+  try {
+    parsedJson = JSON.parse(sanitized);
+  } catch (error) {
+    const parseMsg = error instanceof Error ? error.message : "Invalid JSON";
+    throw new AIResponseParseError(
+      `Model returned invalid JSON for document analysis: ${parseMsg}`,
+      rawText
+    );
+  }
+
+  if (typeof parsedJson === "object" && parsedJson !== null) {
+    const record = parsedJson as Record<string, unknown>;
+    record.modelId = modelId;
+    record.documentId = documentId;
+    if (!record.generatedAt) record.generatedAt = new Date().toISOString();
+
+    // Ensure overview has verified document numbers
+    if (typeof record.overview === "object" && record.overview !== null) {
+      const overview = record.overview as Record<string, unknown>;
+      overview.documentId = documentId;
+      overview.originalFilename = originalFilename;
+      overview.totalPages = budgeted.totalPages;
+      overview.analyzedPages = budgeted.analyzedPages;
+      overview.coveragePercentage = budgeted.coveragePercentage;
+      overview.isPartialCoverage = budgeted.isPartialCoverage;
+      overview.totalWordCount = totalWordCount;
+    } else {
+      record.overview = {
+        title: typeof record.title === "string" ? record.title : "Document Analysis Report",
+        documentId,
+        originalFilename,
+        totalPages: budgeted.totalPages,
+        analyzedPages: budgeted.analyzedPages,
+        coveragePercentage: budgeted.coveragePercentage,
+        isPartialCoverage: budgeted.isPartialCoverage,
+        totalWordCount,
+      };
+    }
+  }
+
+  const result = documentAnalysisReportSchema.safeParse(parsedJson);
+
+  if (!result.success) {
+    const issues = result.error.issues
+      .map((i) => `${i.path.join(".")}: ${i.message}`)
+      .join("; ");
+    throw new AIResponseParseError(
+      `Document analysis output failed schema validation: ${issues}`,
       rawText
     );
   }

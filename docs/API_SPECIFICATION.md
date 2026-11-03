@@ -3,7 +3,7 @@
 > **Status:** Active / Authoritative  
 > **Protocol:** HTTP/1.1 REST + JSON (Next.js Route Handlers)  
 > **Base URL:** `/api`  
-> **Active Features:** Topic-Based AI Analysis (Phase 2), PDF Upload & Page Extraction (Phase 3)
+> **Active Features:** Topic-Based AI Analysis (Phase 2), PDF Upload & Page Extraction (Phase 3), Grounded PDF Analysis & Citations (Phase 4)
 
 ---
 
@@ -182,7 +182,118 @@ Synthesizes a topic into a structured, academic research report using the OpenAI
 
 ---
 
-### 2.4 System Health Check
+### 2.4 Grounded PDF Document Analysis (Phase 4 Active)
+
+#### `POST /api/documents/[id]/analyze`
+Analyzes an uploaded, extracted PDF document using the OpenAI Responses API, producing a structured, 12-section evidence-grounded academic research report with exact 1-indexed page citations.
+
+- **Authentication:** Public
+- **Content-Type:** `application/json`
+
+**URL Parameters:**
+- `id` *(string, required)*: The internal document identifier (`doc_*`).
+
+**Request Body (Optional):**
+```json
+{
+  "focusArea": "Methodological validity and empirical benchmark results"
+}
+```
+
+**Success Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "title": "Document Analysis: FlashAttention Fast Attention Mechanisms",
+    "documentOverview": {
+      "fileName": "flash-attention.pdf",
+      "totalPages": 12,
+      "analyzedPagesCount": 12,
+      "analyzedPages": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+      "coveragePercentage": 100,
+      "isPartialCoverage": false
+    },
+    "executiveSummary": "FlashAttention introduces an IO-aware exact attention algorithm...",
+    "researchObjectives": [
+      {
+        "objective": "Address memory IO bottlenecks in standard multi-head attention",
+        "status": "addressed",
+        "pageReferences": [1, 2]
+      }
+    ],
+    "keyFindings": [
+      {
+        "claim": "Tiling computation reduces memory reads/writes from O(N^2) to O(N)",
+        "evidenceStatus": "from_document",
+        "pageReferences": [2, 4],
+        "analysis": "By splitting inputs into blocks and loading them into SRAM, FlashAttention avoids high-bandwidth HBM roundtrips."
+      }
+    ],
+    "detailedAnalysis": [
+      {
+        "heading": "Algorithm & Kernel Implementation",
+        "content": "The kernel fuses softmax reduction and matrix multiplication...",
+        "pageReferences": [3, 4]
+      }
+    ],
+    "methodologyAssessment": {
+      "design": "Empirical benchmarking across BERT-large, GPT-2, and Long-Range Arena",
+      "dataSources": "Synthetic benchmarks and standard NLP corpora",
+      "strengths": [
+        "Exact mathematics without approximation errors",
+        "End-to-end wall-clock speedups"
+      ],
+      "limitations": [
+        "SRAM tile size is hardware-specific"
+      ],
+      "pageReferences": [5, 6]
+    },
+    "importantConcepts": [
+      {
+        "term": "IO-Aware Complexity",
+        "definition": "Measuring algorithmic efficiency by memory hierarchy accesses rather than pure FLOP count.",
+        "pageReferences": [2]
+      }
+    ],
+    "strengthsAndWeaknesses": {
+      "strengths": [
+        "Exact equivalence to standard self-attention",
+        "Up to 3x training speedup"
+      ],
+      "weaknesses": [
+        "Requires hand-tuned CUDA kernel implementation"
+      ]
+    },
+    "limitations": [
+      "Evaluation is restricted to NVIDIA Ampere and Turing architectures"
+    ],
+    "researchGaps": [
+      "Extension to non-transformer state space architectures"
+    ],
+    "conclusion": "FlashAttention provides an IO-aware paradigm shift in deep learning attention layers...",
+    "suggestedFurtherResearch": [
+      "Hardware-adaptive block tiling for non-NVIDIA accelerators",
+      "Integration with quantized KV caches"
+    ]
+  },
+  "metadata": {
+    "timestamp": "2026-11-03T13:45:00.000Z",
+    "processingTimeMs": 2450,
+    "model": "gpt-4o-mini"
+  }
+}
+```
+
+**Error Responses:**
+- `404 NOT_FOUND`: Document does not exist or has expired.
+- `422 UNPROCESSABLE_ENTITY`: Document is scanned/image-only (`ocrRequired: true`) or contains no extractable text.
+- `401 AI_AUTH_ERROR`: OpenAI API key missing or invalid.
+- `429 AI_RATE_LIMIT`: OpenAI API rate limit exceeded.
+
+---
+
+### 2.5 System Health Check
 
 #### `GET /api/health`
 Checks server runtime status and configuration without exposing credentials.
@@ -193,7 +304,7 @@ Checks server runtime status and configuration without exposing credentials.
   "success": true,
   "data": {
     "status": "healthy",
-    "phase": 3,
+    "phase": 4,
     "provider": "openai",
     "openAIConfigured": true,
     "configuredModel": "gpt-4o-mini",
