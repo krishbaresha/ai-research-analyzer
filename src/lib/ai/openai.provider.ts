@@ -4,6 +4,7 @@ import {
   AIProviderResult,
   TopicAnalysisOptions,
   DocumentAnalysisOptions,
+  DocumentChatOptions,
   AIAuthError,
   AIRateLimitError,
   AIQuotaExceededError,
@@ -15,9 +16,16 @@ import {
   buildTopicAnalysisPrompt,
   DOCUMENT_ANALYSIS_SYSTEM_INSTRUCTION,
   buildDocumentAnalysisPrompt,
+  DOCUMENT_CHAT_SYSTEM_INSTRUCTION,
+  buildDocumentChatPrompt,
 } from "./prompts";
-import { parseAndValidateReport, parseAndValidateDocumentReport } from "./parsers";
+import {
+  parseAndValidateReport,
+  parseAndValidateDocumentReport,
+  parseAndValidateChatResponse,
+} from "./parsers";
 import { ResearchReport, DocumentAnalysisReport } from "@/types/research";
+import { ChatAssistantMessage } from "@/types/chat";
 import { budgetDocumentPages } from "../pdf/budgeter";
 import { getServerConfig } from "../validation/env.schema";
 
@@ -237,6 +245,97 @@ export class OpenAIProvider implements AIProvider {
 
       return {
         data: report,
+        rawOutput: outputText,
+        modelUsed: model,
+        processingTimeMs,
+      };
+    } catch (error: unknown) {
+      if (error instanceof AIServiceError) {
+        throw error;
+      }
+
+      this.handleOpenAIError(error);
+    }
+  }
+
+  /**
+   * Generates a grounded, evidence-backed answer to a user's question regarding an uploaded PDF.
+   */
+  async chatDocument(
+    options: DocumentChatOptions
+  ): Promise<AIProviderResult<ChatAssistantMessage>> {
+    const client = this.getClient();
+    const model = this.defaultModel;
+    const startTime = Date.now();
+
+    const prompt = buildDocumentChatPrompt({
+      userMessage: options.userMessage,
+      retrievedPassages: options.retrievedPassages,
+      conversationHistory: options.conversationHistory,
+      documentTitle: options.document.metadata.originalFilename,
+      originalFilename: options.document.metadata.originalFilename,
+    });
+
+    try {
+      let outputText = "";
+
+      try {
+        const response = await client.responses.create({
+          model,
+          instructions: DOCUMENT_CHAT_SYSTEM_INSTRUCTION,
+          input: prompt,
+        });
+
+        if (response.output_text) {
+          outputText = response.output_text;
+        } else if (response.output && Array.isArray(response.output)) {
+          for (const item of response.output) {
+            if ("content" in item && typeof item.content === "string") {
+              outputText += item.content;
+            } else if ("text" in item && typeof item.text === "string") {
+              outputText += item.text;
+            }
+          }
+        }
+      } catch (responsesApiError: unknown) {
+        const errorMsg =
+          responsesApiError instanceof Error
+            ? responsesApiError.message.toLowerCase()
+            : "";
+
+        if (
+          errorMsg.includes("not supported") ||
+          errorMsg.includes("unrecognized request") ||
+          errorMsg.includes("responses is not a function")
+        ) {
+          const chatResponse = await client.chat.completions.create({
+            model,
+            messages: [
+              { role: "system", content: DOCUMENT_CHAT_SYSTEM_INSTRUCTION },
+              { role: "user", content: prompt },
+            ],
+            response_format: { type: "json_object" },
+          });
+
+          outputText = chatResponse.choices[0]?.message?.content || "";
+        } else {
+          throw responsesApiError;
+        }
+      }
+
+      if (!outputText || outputText.trim() === "") {
+        throw new AIServiceError(
+          "OpenAI returned an empty response for document chat.",
+          "AI_EMPTY_RESPONSE",
+          502
+        );
+      }
+
+      const validated = parseAndValidateChatResponse(outputText);
+      const processingTimeMs = Date.now() - startTime;
+
+      return {
+        data: validated,
         rawOutput: outputText,
         modelUsed: model,
         processingTimeMs,

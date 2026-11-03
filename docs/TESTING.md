@@ -1,9 +1,9 @@
 # AI Research Analyzer — Testing Strategy & Quality Assurance
 
 > **Status:** Active  
-> **Last Test Run:** 2026-11-03 (Phase 4: PDF Analysis & Evidence-Grounded Reports)  
+> **Last Test Run:** 2026-11-03 (Phase 5: Document Chat & Grounded Q&A)  
 > **Active AI Provider:** OpenAI (`gpt-4o-mini`) via `client.responses.create()`  
-> **Active PDF Engine:** `unpdf` (`^2.1.0`) with page boundary mapping and context-aware page budgeting
+> **Active PDF Engine:** `unpdf` (`^2.1.0`) with page boundary mapping and deterministic BM25 passage retrieval
 
 ---
 
@@ -47,10 +47,15 @@ pnpm build
 
 ---
 
-## 3. Test Suites & Verification Results (Phase 4)
+## 3. Test Suites & Verification Results (Phase 5)
 
 | Test Suite | File | Tests | Result | Purpose |
 |---|---|---|---|---|
+| **Document Retriever** | `tests/unit/retriever.test.ts` | 7 | **PASSED** | Verifies BM25/TF-IDF keyword tokenization, page query extraction, overlapping page chunking, multi-page retrieval across all pages, explicit page boosting, abstention on irrelevant queries, and empty document handling. |
+| **Conversation Store** | `tests/unit/conversation-store.test.ts` | 6 | **PASSED** | Verifies ephemeral session creation, session lookup, chronological message append, 20-message bounded context FIFO eviction, clear session, and session deletion. |
+| **Document Chat Parsers** | `tests/unit/chat-parsers.test.ts` | 5 | **PASSED** | Verifies JSON parsing against `chatAssistantResponseSchema`, markdown code fence stripping, single-number page citation coercion, syntax error handling, and missing field rejection. |
+| **Document Chat Integration** | `tests/integration/document-chat.test.ts` | 6 | **PASSED** | Verifies `POST /api/documents/[id]/chat` endpoint, session generation, follow-up continuation, 404 for missing document, 400 for document ID session mismatch, 422 for scanned PDF, and `DELETE` session clearing. |
+| **Chat Security & Prompt Injection** | `tests/security/chat-security.test.ts` | 3 | **PASSED** | Verifies rogue XML delimiter sanitization, prompt injection anti-override directives, and checks that chat client components have zero access to server keys. |
 | **Phase 4 QA Audit Suite** | `tests/integration/phase4-qa-audit.test.ts` | 9 | **PASSED** | Comprehensive audit testing small PDFs, multi-page boundary sequential preservation, 12-section presence, citation bounds integrity, 60k-char budget sampling, scanned PDF 422 OCR_REQUIRED enforcement, and topic regression. |
 | **Document Analysis Integration** | `tests/integration/document-analysis.test.ts` | 7 | **PASSED** | Verifies `POST /api/documents/[id]/analyze`, end-to-end grounded report generation, page citation preservation, partial coverage handling, scanned PDF 422 rejection, 404 missing document handling, and OpenAI error mapping. |
 | **Document Budgeter** | `tests/unit/document-budgeter.test.ts` | 4 | **PASSED** | Verifies full coverage for documents under budget, weighted strategic sampling for long documents, empty document error handling, and XML character sanitization. |
@@ -64,7 +69,7 @@ pnpm build
 | **Topic Prompts & Anti-Injection** | `tests/unit/prompts.test.ts` | 4 | **PASSED** | Verifies structural isolation delimiters (`<user_topic>`, `<scope_constraints>`) and defensive system instructions forbidding prompt overrides. |
 | **OpenAI Provider Integration (Mocked)** | `tests/integration/openai-provider.test.ts` | 6 | **PASSED** | Verifies `client.responses.create()` calls, `AIAuthError` on missing key, 401 handling, 429 quota/rate limit error mapping, and malformed output rejection. |
 
-**Total:** 12 test files, 65 automated tests, 100% passing.
+**Total:** 17 test files, 92 automated tests, 100% passing.
 
 ---
 
@@ -72,14 +77,14 @@ pnpm build
 
 | Check | Tool / Command | Result | Details |
 |---|---|---|---|
-| **Unit & Integration Tests** | `vitest run` | **65 / 65 PASSED** | All document analysis, budgeting, PDF extraction, prompt, provider, and security tests pass. |
+| **Unit & Integration Tests** | `vitest run` | **92 / 92 PASSED** | All document chat, retrieval, budgeting, extraction, prompt, provider, and security tests pass. |
 | **TypeScript Strictness** | `pnpm type-check` | **PASSED (0 errors)** | Zero type errors with strict mode enabled. |
 | **Next.js Linter** | `pnpm lint` | **PASSED (0 warnings)** | Clean lint run, zero warnings or errors. |
-| **Production Build** | `pnpm build` | **PASSED** | All 10 static and server-rendered routes compile cleanly. |
+| **Production Build** | `pnpm build` | **PASSED** | All 11 static and server-rendered routes compile cleanly. |
 | **Client Secret Isolation** | Automated scan | **VERIFIED** | No keys or server services accessible to browser bundles. |
-| **Live OpenAI API Call** | Live execution | **VERIFIED** | Real API call succeeded via `gpt-4o-mini`, generating full grounded report with verifiable citations. |
-| **Prompt Injection Defense** | Adversarial test | **VERIFIED** | Malicious overrides and XML delimiter escapes inside PDF passages neutralized. |
-| **Context Window Budgeting** | Vitest suite | **VERIFIED** | Long documents are budgeted within 60,000 chars with exact coverage metrics. |
+| **Live OpenAI Chat Smoke Test**| Live execution | **VERIFIED** | Real API call succeeded via `gpt-4o-mini`, answering supported question with page citations and honestly abstaining on unsupported question. |
+| **Prompt Injection Defense** | Adversarial test | **VERIFIED** | Malicious overrides and XML delimiter escapes inside passages neutralized. |
+| **Deterministic BM25 Retrieval** | Vitest suite | **VERIFIED** | All extracted pages indexed and searched with zero vector DB infrastructure. |
 
 ---
 
@@ -123,3 +128,21 @@ Open `http://localhost:3000` in your browser.
 1. Upload a scanned PDF with no extractable text.
 2. Attempt to analyze the document.
 3. Observe that the analysis button is disabled with an explanatory disclaimer that OCR is required.
+
+### Step 6: Test Grounded Document Chat & Q&A (Phase 5)
+1. In the Document Workspace, click the **Document Chat & Q&A** tab.
+2. Notice the empty state with 5 suggested academic research questions and the indexed pages counter.
+3. Click an example question (e.g., *"What is the main objective of this research?"*) or type a custom question.
+4. Observe the live loading indicator: *"Searching extracted pages & synthesizing grounded answer..."*.
+5. Observe the assistant's structured response:
+   - Evidence status badge (`Supported by Document` or `Partially Supported`).
+   - Claim breakdown with clickable citation pills like `p. 1`, `p. 3`.
+   - Retrieved sources accordion showing page numbers and relevance reasons.
+   - Retrieval transparency banner: *"Searched X pages • Evidence cited from: p. Y, Z"*.
+6. Click any citation chip (e.g. `p. 2`):
+   - The view automatically switches to the **Extracted Pages** tab.
+   - The viewer smoothly scrolls to Page 2 and visually highlights the page card.
+7. Ask an unsupported question (e.g., *"Does this paper discuss CRISPR gene editing?"*):
+   - Observe that the assistant honestly abstains with `Not in Document (Abstained)`.
+   - Zero hallucinated citations or page numbers.
+8. Click **Clear Chat** and verify that the conversation history resets cleanly.

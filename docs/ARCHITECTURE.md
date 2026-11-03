@@ -1,7 +1,7 @@
 # AI Research Analyzer — System Architecture
 
 > **Document Status:** Active / Authoritative  
-> **Last Updated:** 2026-11-03 (Phase 4: PDF Analysis & Evidence-Grounded Reports)  
+> **Last Updated:** 2026-11-03 (Phase 5: Document Chat & Evidence-Grounded Q&A)  
 > **Target Framework:** Next.js 15 (App Router) + TypeScript + Tailwind CSS
 
 ---
@@ -39,7 +39,7 @@
 [ Domain Feature Layer ]
    - src/features/research/ (Topic analysis forms, report viewer, evidence badges)
    - src/features/pdf-analysis/ (Upload dropzone, page-by-page DocumentViewer, DocumentReportViewer, interactive citation navigation)
-   - src/features/document-chat/ (Grounded Q&A panel shell - Phase 5)
+   - src/features/document-chat/ (Interactive DocumentChat, claim citations, sources accordion, retrieval transparency)
    - src/features/projects/ (Project listing, cards, status)
         │
         ▼
@@ -47,6 +47,7 @@
    - src/app/api/documents/upload/route.ts      (POST: multipart upload & extraction)
    - src/app/api/documents/[id]/route.ts        (GET: document & extracted pages retrieval)
    - src/app/api/documents/[id]/analyze/route.ts (POST: grounded document analysis via OpenAI Responses API)
+   - src/app/api/documents/[id]/chat/route.ts   (POST: grounded document chat; DELETE: clear session)
    - src/app/api/research/analyze-topic/route.ts (POST: topic analysis via OpenAI Responses API)
    - src/app/api/health/route.ts                (GET: health check & config diagnostics)
         │
@@ -57,6 +58,8 @@
        ├── extractor.ts          (unpdf page-by-page extraction, scanned detection, word counting)
        ├── budgeter.ts           (Context-aware page budgeting, coverage metrics, XML injection sanitization)
        └── index.ts              (Barrel exports)
+   - src/lib/retrieval/
+       └── retriever.ts          (Deterministic BM25-inspired passage chunker & relevance ranking)
    - src/lib/ai/
        ├── provider.ts           (Abstract AIProvider interface & domain error classes)
        ├── openai.provider.ts    (OpenAI Responses API client.responses.create wrapper)
@@ -67,12 +70,14 @@
         ▼
 [ Data Access & Persistence Layer ]
    - src/lib/storage/
-       └── document-store.ts     (In-memory repository implementing DocumentStore for Phases 1-5)
+       ├── document-store.ts     (In-memory repository implementing DocumentStore for Phases 1-5)
+       └── conversation-store.ts (Bounded in-memory repository for Document Chat sessions)
         │
         ▼
 [ Shared Validation, Types & Utils ]
-   - src/lib/validation/         (Zod schemas for topic & document analysis, env)
+   - src/lib/validation/         (Zod schemas for topic, document analysis, and chat requests/responses)
    - src/types/document.ts       (ExtractedPage, DocumentMetadata, ExtractedDocument)
+   - src/types/chat.ts           (ChatMessage, ChatAssistantMessage, ChatEvidenceStatus, ChatRetrievalInfo)
    - src/types/research.ts       (Topic ResearchReport & DocumentAnalysisReport, KeyFinding, DetailedSection)
    - src/lib/utils.ts            (Tailwind utility merge, formatting helpers)
 ```
@@ -116,11 +121,11 @@ e:\Research Analyzer\
 │   │   ├── validation/                # Zod schemas (research.schema.ts, env.schema.ts)
 │   │   └── utils.ts                   # Tailwind utility merge
 │   └── types/                         # TypeScript interfaces (document.ts, research.ts, api.ts)
-└── tests/                             # Vitest test suite (56 tests)
+└── tests/                             # Vitest test suite (92 tests)
     ├── fixtures/                      # Mock PDF buffers & JSON reports
-    ├── integration/                   # Document upload, document analysis & OpenAI provider integration tests
-    ├── security/                      # Secret isolation & boundary audit
-    └── unit/                          # PDF validator, PDF extractor, budgeter, prompts, and parser tests
+    ├── integration/                   # Document upload, document analysis, document chat & OpenAI integration tests
+    ├── security/                      # Secret isolation, boundary audit & chat injection tests
+    └── unit/                          # PDF validator, PDF extractor, budgeter, retriever, conversation store, prompts, and parser tests
 ```
 
 ---
@@ -156,3 +161,23 @@ e:\Research Analyzer\
    - `not_established`: Unverified or unaddressed dimensions.
 4. **Interactive Citation UX:**
    - Clicking citation badges in the analysis report triggers tab switching and smooth scrolling to the exact cited page in the Document Workspace viewer.
+
+---
+
+## 6. Document Chat & Deterministic Passage Retrieval (Phase 5)
+
+1. **Full-Document Scope (Zero Phase 4 Sampling Restrictions):**
+   - Document Q&A searches across ALL extracted pages (1 to N) stored in `DocumentStore`, ensuring findings on any page can be answered.
+2. **Deterministic BM25 Chunking & Ranking (`src/lib/retrieval/retriever.ts`):**
+   - Pages are segmented into overlapping passages (~900 chars with 150-char overlap) retaining exact 1-indexed page associations.
+   - Queries are normalized and filtered for stop words, ranking passages with BM25 term frequency-inverse document frequency weighting.
+   - Explicit page numbers in queries (e.g., "what is on page 4?") are detected and boosted.
+   - Top-ranked passages (bounded by 5 chunks and 10,000 chars) are supplied to the prompt. If no passages match, returns an empty set so the model abstains rather than hallucinations.
+3. **Bounded Ephemeral Session Management (`src/lib/storage/conversation-store.ts`):**
+   - Sessions are identified by `conv_${timestamp}_${random}` and strictly associated with the target `documentId`.
+   - Maximum 20 messages per session with LRU eviction across 50 active sessions.
+   - Recent conversation turns (up to 6 messages) are passed in `<conversation_context>` for dialogue continuity.
+4. **Evidence Grounding & Interactive Navigation:**
+   - Models return structured claims with `pageReferences` and source relevance explanations.
+   - Four evidence states: `supported`, `partially_supported`, `not_found`, and `interpretation`.
+   - Clicking any citation badge jumps directly to the cited page in the Document Workspace reader.

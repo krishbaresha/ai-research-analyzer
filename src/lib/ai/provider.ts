@@ -1,5 +1,6 @@
 import { ResearchReport, DocumentAnalysisReport } from "@/types/research";
 import { ExtractedDocument } from "@/types/document";
+import { ChatAssistantMessage } from "@/types/chat";
 
 export class AIServiceError extends Error {
   public readonly code: string;
@@ -69,6 +70,15 @@ export interface DocumentAnalysisOptions {
   signal?: AbortSignal;
 }
 
+export interface DocumentChatOptions {
+  documentId: string;
+  document: ExtractedDocument;
+  userMessage: string;
+  retrievedPassages: Array<{ pageNumber: number; text: string }>;
+  conversationHistory?: Array<{ role: "user" | "assistant"; content: string }>;
+  signal?: AbortSignal;
+}
+
 export interface AIProviderResult<T> {
   data: T;
   rawOutput?: string;
@@ -86,4 +96,5 @@ export interface AIProvider {
 
   analyzeTopic(options: TopicAnalysisOptions): Promise<AIProviderResult<ResearchReport>>;
   analyzeDocument(options: DocumentAnalysisOptions): Promise<AIProviderResult<DocumentAnalysisReport>>;
+  chatDocument(options: DocumentChatOptions): Promise<AIProviderResult<ChatAssistantMessage>>;
 }

@@ -15,6 +15,7 @@ import {
   Sparkles,
   AlertCircle,
   BookOpen,
+  MessageSquare,
 } from "lucide-react";
 import { ExtractedDocument } from "@/types/document";
 import { DocumentAnalysisReport } from "@/types/research";
@@ -32,6 +33,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { DocumentReportViewer } from "./document-report-viewer";
+import { DocumentChat } from "@/features/document-chat/components/document-chat";
 
 interface DocumentViewerProps {
   document: ExtractedDocument;
@@ -47,8 +49,8 @@ export function DocumentViewer({
   const { metadata, pages } = document;
 
   // View tabs
-  const [activeTab, setActiveTab] = React.useState<"report" | "pages">(
-    initialReport ? "report" : "pages"
+  const [activeTab, setActiveTab] = React.useState<"report" | "chat" | "pages">(
+    initialReport ? "report" : "chat"
   );
   const [selectedPageIndex, setSelectedPageIndex] = React.useState(0);
   const [copiedFull, setCopiedFull] = React.useState(false);
@@ -342,6 +344,19 @@ export function DocumentViewer({
         )}
         <button
           type="button"
+          onClick={() => setActiveTab("chat")}
+          className={cn(
+            "flex items-center gap-2 border-b-2 px-5 py-3 text-sm font-medium transition-colors cursor-pointer",
+            activeTab === "chat"
+              ? "border-primary text-primary font-semibold"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <MessageSquare className="h-4 w-4" />
+          <span>Document Chat & Q&A</span>
+        </button>
+        <button
+          type="button"
           onClick={() => setActiveTab("pages")}
           className={cn(
             "flex items-center gap-2 border-b-2 px-5 py-3 text-sm font-medium transition-colors cursor-pointer",
@@ -363,7 +378,15 @@ export function DocumentViewer({
         />
       )}
 
-      {/* Tab 2: Render Page Navigation & Extracted Content Viewer */}
+      {/* Tab 2: Render Document Chat */}
+      {activeTab === "chat" && (
+        <DocumentChat
+          document={document}
+          onSelectPage={handleSelectPage}
+        />
+      )}
+
+      {/* Tab 3: Render Page Navigation & Extracted Content Viewer */}
       {activeTab === "pages" && (
         <div ref={pagesContainerRef}>
           <Card>

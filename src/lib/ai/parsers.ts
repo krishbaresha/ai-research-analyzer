@@ -4,6 +4,10 @@ import {
   documentAnalysisReportSchema,
   ValidatedDocumentAnalysisReport,
 } from "../validation/research.schema";
+import {
+  chatAssistantResponseSchema,
+  ValidatedChatAssistantResponse,
+} from "../validation/chat.schema";
 import { AIResponseParseError } from "./provider";
 import { BudgetedDocument } from "../pdf/budgeter";
 
@@ -132,6 +136,53 @@ export function parseAndValidateDocumentReport(
       .join("; ");
     throw new AIResponseParseError(
       `Document analysis output failed schema validation: ${issues}`,
+      rawText
+    );
+  }
+
+  return result.data;
+}
+
+/**
+ * Parses and validates raw LLM output against the ChatAssistantResponse schema (Phase 5).
+ */
+export function parseAndValidateChatResponse(
+  rawText: string
+): ValidatedChatAssistantResponse {
+  const sanitized = sanitizeModelJsonString(rawText);
+
+  let parsedJson: unknown;
+  try {
+    parsedJson = JSON.parse(sanitized);
+  } catch (error) {
+    const parseMsg = error instanceof Error ? error.message : "Invalid JSON";
+    throw new AIResponseParseError(
+      `Model returned invalid JSON for document chat: ${parseMsg}`,
+      rawText
+    );
+  }
+
+  if (typeof parsedJson === "object" && parsedJson !== null) {
+    const record = parsedJson as Record<string, unknown>;
+    if (!record.id) {
+      record.id = `msg_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    }
+    if (!record.role) {
+      record.role = "assistant";
+    }
+    if (!record.createdAt) {
+      record.createdAt = new Date().toISOString();
+    }
+  }
+
+  const result = chatAssistantResponseSchema.safeParse(parsedJson);
+
+  if (!result.success) {
+    const issues = result.error.issues
+      .map((i) => `${i.path.join(".")}: ${i.message}`)
+      .join("; ");
+    throw new AIResponseParseError(
+      `Document chat output failed schema validation: ${issues}`,
       rawText
     );
   }

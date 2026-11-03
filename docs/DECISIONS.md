@@ -174,3 +174,32 @@
   - Guaranteed predictable inference latency and bounded token usage even on large documents.
   - Zero hallucinated citations or fabricated page numbers.
   - Transparent user feedback when partial document sampling occurs.
+
+---
+
+## ADR-011: Lightweight Deterministic Passage Retrieval and Grounded Document Q&A
+
+- **Date:** 2026-11-03
+- **Status:** Accepted (Phase 5)
+- **Context:**
+  Users need an interactive question-and-answer assistant to interrogate uploaded research PDFs. While Phase 4 employs strategic front/back sampling for macro report synthesis, document chat must query across ALL extracted pages, including pages outside the strategic sample. However, introducing vector databases (pgvector/Pinecone), embedding models, or external search would inflate infrastructure costs and complexity prior to Phase 6 persistence.
+- **Decision:**
+  1. **Lightweight, Deterministic In-Memory BM25 Retrieval (`src/lib/retrieval/retriever.ts`):**
+     - Chunks all pages into overlapping segments (~900 chars with 150-char overlap) preserving exact 1-indexed page boundaries.
+     - Tokenizes queries into normalized keywords with academic stop-word filtering.
+     - Implements BM25/TF-IDF term weighting across chunks with explicit page number detection (e.g., boosting page 4 when the user asks "what is on page 4?").
+     - Bounded passage selection (top 5 chunks up to 10,000 characters), avoiding sending whole documents per turn.
+     - Explicit abstention: if no passages pass the relevance threshold, returns empty passages, prompting the model to state evidence is not found.
+  2. **Bounded Server-Side Conversation Store (`src/lib/storage/conversation-store.ts`):**
+     - Ephemeral in-memory store associating conversations strictly with their target `documentId`.
+     - Caps message history to the most recent 20 messages per session and limits maximum active sessions to 50 to prevent unbounded memory growth.
+     - Passes the last 6 messages (3 conversation turns) to the model for conversational context.
+     - Explicit document-conversation association checks prevent cross-document chat leakage.
+  3. **Strict Groundedness and Evidence Attribution:**
+     - Requires structured JSON responses with four evidence statuses: `supported`, `partially_supported`, `not_found`, and `interpretation`.
+     - Individual claim-level page citations (`claims: [{ statement, pageReferences, evidenceStatus }]`).
+     - Clicking citations smoothly navigates to the cited page in the Document Workspace.
+- **Consequences:**
+  - Zero external vector DB or embedding API dependencies.
+  - Deterministic, low-latency, zero-cost retrieval across all extracted pages.
+  - Clear user transparency and verified citations without hallucination.

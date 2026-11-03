@@ -8,7 +8,7 @@ export async function GET() {
     success: true,
     data: {
       status: "healthy",
-      phase: 4,
+      phase: 5,
       provider: "openai",
       openAIConfigured: config.hasOpenAIKey,
       configuredModel: config.model,

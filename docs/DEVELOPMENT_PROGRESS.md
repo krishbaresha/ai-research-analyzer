@@ -14,8 +14,8 @@
 | **Phase 2** | Server-Side OpenAI Integration (Responses API) & Topic-Based Analysis | **COMPLETED** | 2026-11-03 |
 | **Phase 3** | PDF Upload and Reliable Text Extraction | **COMPLETED** | 2026-11-03 |
 | **Phase 4** | PDF Analysis and Evidence-Grounded Reports | **COMPLETED** | 2026-11-03 |
-| **Phase 5** | Document Chat (Grounded Q&A) | Planned (Next) | — |
-| **Phase 6** | Persistence, Projects, and History | Planned | — |
+| **Phase 5** | Document Chat (Grounded Q&A) | **COMPLETED** | 2026-11-03 |
+| **Phase 6** | Persistence, Projects, and History | Planned (Next) | — |
 | **Phase 7** | Multi-Document Comparison and RAG Improvements | Planned | — |
 | **Phase 8** | Web Research and External Sources | Planned | — |
 | **Phase 9** | Export, Polish, and Release Readiness | Planned | — |
@@ -139,3 +139,68 @@
 ### 3. Next Phase Readiness
 - Ready for **Phase 5: Document Chat (Grounded Q&A)**.
 - Scope boundary enforced: Phase 5 has NOT been started. Zero chat persistence or embedding models introduced.
+
+---
+
+## Phase 5: Document Chat & Evidence-Grounded Q&A (Completed)
+
+### 1. Requirements Delivered
+- **Full-Document Scope & Deterministic BM25 Passage Retrieval (`src/lib/retrieval/retriever.ts`):**
+  - Designed and implemented a lightweight, deterministic server-side passage retrieval engine operating across ALL extracted pages (1 to N) stored in `DocumentStore` without Phase 4 sampling restrictions.
+  - Chunks document pages into overlapping segments (~900 chars, 150-char overlap) strictly preserving 1-indexed original page numbers.
+  - Tokenizes queries into normalized keywords with academic stop-word filtering.
+  - Implements BM25/TF-IDF term weighting across chunks, with explicit page number detection (e.g. boosting page 4 when the user specifies "on page 4").
+  - Bounded passage selection (top 5 chunks up to 10,000 characters).
+  - Explicit abstention: if no passages meet the relevance threshold, returns an empty set so the model abstains rather than hallucinates.
+  - Zero external vector databases, zero embedding APIs, zero new infrastructure.
+- **Bounded In-Memory Conversation Storage (`src/lib/storage/conversation-store.ts`):**
+  - Ephemeral session storage associating conversations strictly with their target `documentId`.
+  - Enforces bounded history (maximum 20 messages per session) with FIFO/LRU eviction across 50 active sessions to prevent unbounded memory growth.
+  - Validates document-to-conversation association, rejecting cross-document session tampering with HTTP 400.
+  - Clear and delete session lifecycle operations.
+- **Grounded Chat Prompts & Schema Contracts (`src/lib/ai/prompts.ts`, `src/lib/validation/chat.schema.ts`, `src/lib/ai/parsers.ts`):**
+  - Defined `DOCUMENT_CHAT_SYSTEM_INSTRUCTION` and `buildDocumentChatPrompt` wrapping passages in `<retrieved_passage page="N">` tags with XML delimiter sanitization.
+  - Defined strict Zod schemas for `chatAssistantResponseSchema`, requiring 4 evidence statuses: `supported`, `partially_supported`, `not_found`, and `interpretation`.
+  - Claim-level attribution: models return individual claims with specific `pageReferences: number[]` and `evidenceStatus`.
+  - Source tracking: models provide `sources: [{ pageNumber, relevanceReason, excerpt }]`.
+  - Untrusted data boundary and anti-override instructions strictly enforced.
+- **Official OpenAI Responses API Integration (`src/lib/ai/openai.provider.ts`):**
+  - Added `chatDocument(options: DocumentChatOptions)` to `AIProvider` and `OpenAIProvider`.
+  - Invokes `client.responses.create()` with robust fallback to `client.chat.completions.create()`.
+  - Passes recent conversation history (up to 6 messages) for dialogue continuity.
+- **REST API Routes (`POST /api/documents/[id]/chat` & `DELETE /api/documents/[id]/chat`):**
+  - Validates document presence (`404 NOT_FOUND` for missing).
+  - Blocks scanned/image-only PDFs (`422 UNPROCESSABLE_ENTITY`, code `OCR_REQUIRED`).
+  - Supports conversation continuation and new session generation.
+  - Returns standardized response with assistant message, claim citations, sources, and retrieval transparency metadata (`pagesSearched`, `pagesUsed`, `partialCoverage`).
+- **Interactive Workspace UI (`src/features/document-chat/components/document-chat.tsx`):**
+  - Clean academic research assistant layout with user and assistant message styling.
+  - Evidence status badges: `Supported by Document`, `Partially Supported`, `Not in Document (Abstained)`, and `Analytical Interpretation`.
+  - Clickable page citation pills (`p. 2`, `p. 5`) with smooth navigation: clicking any citation switches to the "Extracted Pages" tab, scrolls smoothly to that page card, and visually highlights it.
+  - Sources accordion detailing why each page supports the answer.
+  - Retrieval transparency pill: `"Searched X pages • Evidence cited from: p. Y, Z"`.
+  - Empty state with 5 one-click example research questions.
+  - Clear chat action and error recovery state.
+  - Seamlessly integrated as a primary tab in `DocumentViewer` (`src/features/pdf-analysis/components/document-viewer.tsx`).
+
+### 2. Quality Assurance & Test Verification
+- **Automated Vitest Suite (92 tests passing across 17 files):**
+  - `tests/unit/retriever.test.ts` (7 tests): Keyword normalization, explicit page number detection, overlapping chunking, multi-page retrieval (early/mid/late pages), page query boost, abstention on irrelevant queries, empty document handling.
+  - `tests/unit/conversation-store.test.ts` (6 tests): Session creation, retrieval, chronological message storage, 20-message bounded history eviction, clear session, delete session.
+  - `tests/unit/chat-parsers.test.ts` (5 tests): JSON parsing, code fence stripping, single-number-to-array coercion, invalid JSON error handling, missing required fields.
+  - `tests/integration/document-chat.test.ts` (6 tests): End-to-end chat endpoint, new session creation, continuation with `conversationId`, 404 for missing document, 400 for document mismatch, 422 for scanned PDF, DELETE conversation clearing.
+  - `tests/security/chat-security.test.ts` (3 tests): Rogue XML delimiter sanitization, prompt injection anti-override directives, secret isolation audit.
+  - All prior test suites retained and passing: 65 tests across Phase 1–4 suites.
+- **Live OpenAI API Verification:**
+  - Tested supported question against real academic paper: accurately retrieved Page 2, quoted 3.2x/4.1x speedup, attached `pageReferences: [2]`, and returned `supported`.
+  - Tested unsupported question (CRISPR): retrieved 0 passages, returned `evidenceStatus: "not_found"`, honestly stated the document does not mention the topic, zero hallucinated citations.
+  - Tested follow-up question preserving conversation context.
+- **Verification Commands:**
+  - `pnpm lint`: Zero warnings, zero errors (`No ESLint warnings or errors`).
+  - `pnpm type-check`: Strict mode passed with zero errors (`tsc --noEmit`).
+  - `pnpm test`: 92 / 92 tests passed across 17 test files.
+  - `pnpm build`: Next.js production build succeeded with all 11 routes compiled.
+
+### 3. Next Phase Readiness
+- Ready for **Phase 6: Persistence, Projects, and History**.
+- Scope boundary enforced: Phase 6 has NOT been started. Zero database libraries (PostgreSQL, Supabase, Prisma) or multi-document comparison tools introduced. Storage and conversation state remain strictly in-memory per ADR-004.

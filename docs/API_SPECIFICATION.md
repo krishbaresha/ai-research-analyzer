@@ -3,7 +3,7 @@
 > **Status:** Active / Authoritative  
 > **Protocol:** HTTP/1.1 REST + JSON (Next.js Route Handlers)  
 > **Base URL:** `/api`  
-> **Active Features:** Topic-Based AI Analysis (Phase 2), PDF Upload & Page Extraction (Phase 3), Grounded PDF Analysis & Citations (Phase 4)
+> **Active Features:** Topic-Based AI Analysis (Phase 2), PDF Upload & Page Extraction (Phase 3), Grounded PDF Analysis & Citations (Phase 4), Grounded Document Chat & Q&A (Phase 5)
 
 ---
 
@@ -293,7 +293,117 @@ Analyzes an uploaded, extracted PDF document using the OpenAI Responses API, pro
 
 ---
 
-### 2.5 System Health Check
+### 2.5 Grounded Document Chat & Q&A (Phase 5 Active)
+
+#### `POST /api/documents/[id]/chat`
+Interrogates an uploaded PDF document using deterministic page-aware BM25 passage retrieval across all pages, answering questions with exact page references, verified claim breakdown, and honest abstention.
+
+- **Authentication:** Public
+- **Content-Type:** `application/json`
+
+**URL Parameters:**
+- `id` *(string, required)*: The internal document identifier (`doc_*`).
+
+**Request Body:**
+```json
+{
+  "message": "What speedup is reported on NVIDIA A100 GPUs?",
+  "conversationId": "conv_1730640000000_abc123" // null or omitted for new conversation
+}
+```
+
+**Success Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "conversationId": "conv_1730640000000_abc123",
+    "message": {
+      "id": "msg_ast_1730640001000",
+      "role": "assistant",
+      "answer": "The paper reports that FlashAttention yields a 3.2x wall-clock speedup for GPT-2 medium training and up to 4.1x for sequence lengths of 4096 tokens on NVIDIA A100 GPUs.",
+      "evidenceStatus": "supported",
+      "claims": [
+        {
+          "statement": "On NVIDIA A100 GPUs, FlashAttention yields a 3.2x speedup for GPT-2 medium training.",
+          "pageReferences": [2],
+          "evidenceStatus": "from_document"
+        },
+        {
+          "statement": "Yields up to a 4.1x speedup for sequence lengths of 4096 tokens.",
+          "pageReferences": [2],
+          "evidenceStatus": "from_document"
+        }
+      ],
+      "sources": [
+        {
+          "pageNumber": 2,
+          "relevanceReason": "Reports empirical speedup benchmarks on NVIDIA A100 GPUs.",
+          "excerpt": "FlashAttention yields a 3.2x speedup for GPT-2 medium training..."
+        }
+      ],
+      "createdAt": "2026-11-03T14:00:01.000Z"
+    },
+    "retrieval": {
+      "pagesSearched": 12,
+      "pagesUsed": [2],
+      "partialCoverage": false,
+      "totalChunksSearched": 28
+    }
+  },
+  "metadata": {
+    "timestamp": "2026-11-03T14:00:01.000Z",
+    "processingTimeMs": 1320,
+    "model": "gpt-4o-mini"
+  }
+}
+```
+
+**Abstaining Response (when evidence is not found in document):**
+```json
+{
+  "success": true,
+  "data": {
+    "conversationId": "conv_1730640000000_abc123",
+    "message": {
+      "id": "msg_ast_1730640002000",
+      "role": "assistant",
+      "answer": "The uploaded document does not contain information regarding CRISPR gene editing.",
+      "evidenceStatus": "not_found",
+      "claims": [],
+      "sources": [],
+      "createdAt": "2026-11-03T14:00:02.000Z"
+    },
+    "retrieval": {
+      "pagesSearched": 12,
+      "pagesUsed": [],
+      "partialCoverage": false,
+      "totalChunksSearched": 28
+    }
+  }
+}
+```
+
+#### `DELETE /api/documents/[id]/chat?conversationId=conv_...`
+Clears messages from an active in-memory conversation session.
+
+**Success Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "conversationId": "conv_1730640000000_abc123",
+    "cleared": true
+  },
+  "metadata": {
+    "timestamp": "2026-11-03T14:00:03.000Z"
+  }
+}
+```
+
+---
+
+### 2.6 System Health Check
 
 #### `GET /api/health`
 Checks server runtime status and configuration without exposing credentials.
@@ -304,13 +414,13 @@ Checks server runtime status and configuration without exposing credentials.
   "success": true,
   "data": {
     "status": "healthy",
-    "phase": 4,
+    "phase": 5,
     "provider": "openai",
     "openAIConfigured": true,
     "configuredModel": "gpt-4o-mini",
     "maxUploadBytes": 10485760,
     "runtime": "nodejs",
-    "timestamp": "2026-11-03T13:30:00Z"
+    "timestamp": "2026-11-03T14:00:00Z"
   }
 }
 ```
