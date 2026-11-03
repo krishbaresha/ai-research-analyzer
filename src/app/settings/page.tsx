@@ -32,36 +32,36 @@ export default function SettingsPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Groq Inference Configuration */}
+        {/* OpenAI Inference Configuration */}
         <Card>
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Cpu className="h-4 w-4 text-primary" />
-                <CardTitle className="text-sm font-semibold">Groq Inference Engine</CardTitle>
+                <CardTitle className="text-sm font-semibold">OpenAI Responses Engine</CardTitle>
               </div>
               <Badge variant="outline" className="text-[10px]">Server-Side Only</Badge>
             </div>
             <CardDescription className="text-xs">
-              Official Groq JavaScript/TypeScript SDK with LPU hardware acceleration.
+              Official OpenAI JavaScript/TypeScript SDK with Responses API.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3 text-xs">
             <div className="flex justify-between items-center py-1.5 border-b border-border">
-              <span className="text-muted-foreground">Configured Model (GROQ_MODEL)</span>
+              <span className="text-muted-foreground">Configured Model (OPENAI_MODEL)</span>
               <span className="font-mono font-medium text-foreground">
-                llama-3.3-70b-versatile
+                gpt-4o-mini
               </span>
             </div>
             <div className="flex justify-between items-center py-1.5 border-b border-border">
-              <span className="text-muted-foreground">Alternative High-Speed Model</span>
+              <span className="text-muted-foreground">Alternative High-Reasoning Model</span>
               <span className="font-mono font-medium text-foreground">
-                llama-3.1-8b-instant / openai/gpt-oss-120b
+                gpt-4o / o3-mini
               </span>
             </div>
             <div className="flex justify-between items-center py-1.5 border-b border-border">
               <span className="text-muted-foreground">API Interface</span>
-              <span className="font-mono font-medium text-foreground">groq.chat.completions.create()</span>
+              <span className="font-mono font-medium text-foreground">client.responses.create()</span>
             </div>
             <div className="flex justify-between items-center py-1.5">
               <span className="text-muted-foreground">API Key Ingestion</span>
@@ -112,7 +112,7 @@ export default function SettingsPage() {
         <ShieldCheck className="h-4 w-4" />
         <AlertTitle>Security Architecture Enforcement</AlertTitle>
         <AlertDescription className="text-xs leading-relaxed">
-          In accordance with ADR-002, <code>GROQ_API_KEY</code> is never prefixed with{" "}
+          In accordance with ADR-002, <code>OPENAI_API_KEY</code> is never prefixed with{" "}
           <code>NEXT_PUBLIC_</code>, never bundled into client scripts, and never printed in logs.
           All inference calls pass exclusively through server-side provider modules.
         </AlertDescription>

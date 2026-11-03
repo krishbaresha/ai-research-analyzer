@@ -11,7 +11,7 @@
 |---|---|---|---|
 | **Phase 0** | Repository Audit, System Architecture & Documentation Setup | **COMPLETED** | 2026-11-03 |
 | **Phase 1** | Foundation, App Shell, and Design System | **COMPLETED** | 2026-11-03 |
-| **Phase 2** | Server-Side Groq Integration and Topic-Based Analysis | **COMPLETED** | 2026-11-03 |
+| **Phase 2** | Server-Side OpenAI Integration (Responses API) & Topic-Based Analysis | **COMPLETED** | 2026-11-03 |
 | **Phase 3** | PDF Upload and Reliable Text Extraction | Planned (Next) | — |
 | **Phase 4** | PDF Analysis and Evidence-Grounded Reports | Planned | — |
 | **Phase 5** | Document Chat (Grounded Q&A) | Planned | — |
@@ -22,16 +22,18 @@
 
 ---
 
-## Phase 2: Server-Side Groq Integration & Topic-Based Analysis (Completed)
+## Phase 2: Active OpenAI Responses API Integration & Topic Analysis (Completed)
 
 ### 1. Requirements Delivered
-- **Official Groq SDK Integration:**
-  - Integrated `groq-sdk` (v1.6.0) inside `src/lib/ai/groq.provider.ts`.
+- **Official OpenAI SDK as Active Default Provider:**
+  - Integrated `openai` (v7.47.0) with official modern Responses API (`client.responses.create()`).
+  - Completely removed `groq-sdk` and legacy Groq dependencies.
   - Implemented modular `AIProvider` contract allowing seamless model/vendor abstraction.
-  - Implemented exponential backoff retry logic for transient HTTP 429 / 503 errors.
-  - Strict server-only secret isolation: `GROQ_API_KEY` is validated by Zod at server startup and never exposed to the client.
-- **Model Configuration:**
-  - Configurable model via `GROQ_MODEL` environment variable (default: `llama-3.3-70b-versatile` with support for `llama-3.1-8b-instant` and `openai/gpt-oss-120b`).
+  - Strict server-only secret isolation: `OPENAI_API_KEY` is validated by Zod at server startup and never exposed to the client bundle.
+- **Model Configuration & Official Verification:**
+  - Configurable model via `OPENAI_MODEL` environment variable.
+  - Default: `gpt-4o-mini` (cost-effective, high reasoning, native Responses API support).
+  - Alternative models supported: `gpt-4o`, `o3-mini`.
   - Zero hardcoding of model IDs in presentation components.
 - **Topic Research Workflow:**
   - Connected the New Research form in `src/app/new/page.tsx` directly to `POST /api/research/analyze-topic`.
@@ -51,22 +53,26 @@
   - Topic-based analyses are explicitly labelled with `evidenceStatus: "ai_interpretation"`.
   - Clear disclaimers stating analysis is model-generated background analysis, not live web search or empirical peer-reviewed facts.
   - Zero fabricated citations, DOI numbers, or page references.
-- **Frontend & UX Polish:**
-  - Live loading state with dynamic progress indicators ("Connecting to Groq LPU inference...", "Structuring academic analysis...", "Validating report contract...").
-  - Actionable error alert when `GROQ_API_KEY` is missing in `.env.local`.
-  - Full `ReportViewer` component with "Copy Markdown" functionality.
+- **Frontend & UI Alignment:**
+  - All UI elements updated to reflect OpenAI Responses API:
+    - Sidebar footer badge: "OpenAI Responses API".
+    - Dashboard architecture card: "OpenAI API Architecture".
+    - Settings diagnostics: "OpenAI Responses Engine", `client.responses.create()`, `OPENAI_MODEL`.
+    - Research page loading states: "Connecting to OpenAI Responses API...".
+    - Research page error alerts: Clear guidance for `OPENAI_API_KEY` in `.env.local`.
+- **System Health Endpoint:**
+  - `GET /api/health` reports `{ provider: "openai", openAIConfigured: boolean, configuredModel: string }`.
 
 ### 2. Automated Testing & Verification
 - Vitest automated test suite:
   - `tests/unit/parsers.test.ts`: Markdown fence stripping and Zod report schema validation (7 tests).
   - `tests/unit/prompts.test.ts`: Prompt formatting, XML delimiters, and anti-injection instructions (4 tests).
-  - `tests/integration/groq-provider.test.ts`: Mocked Groq SDK integration, 401 auth mapping, 429 rate limit backoff retry, and malformed response handling (5 tests).
-  - `tests/integration/openai-provider.test.ts`: Mocked alternative provider integration (6 tests).
-  - `tests/security/secret-isolation.test.ts`: AST scan verifying zero client imports from server AI modules and zero `NEXT_PUBLIC_` secret prefixing (2 tests).
-  - **All 24 tests passing.**
+  - `tests/integration/openai-provider.test.ts`: Mocked OpenAI SDK integration, 401 auth mapping, 429 rate limit & quota mapping, and malformed response handling (6 tests).
+  - `tests/security/secret-isolation.test.ts`: AST scan verifying zero client imports from server AI modules, zero `NEXT_PUBLIC_` secret prefixing, and no Groq leakage (2 tests).
+  - **All 19 tests passing.**
 - `pnpm lint`: Zero warnings or errors.
 - `pnpm type-check`: Strict mode passed with zero errors.
-- `pnpm build`: Next.js production build succeeded.
+- `pnpm build`: Next.js production build succeeded with all routes optimized.
 
 ### 3. Next Phase Readiness
 - Ready for **Phase 3: PDF Upload and Reliable Text Extraction**.

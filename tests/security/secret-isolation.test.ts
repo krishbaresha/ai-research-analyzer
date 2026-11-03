@@ -3,15 +3,17 @@ import fs from "fs";
 import path from "path";
 
 describe("Secret Isolation & Security Audit", () => {
-  it("ensures GROQ_API_KEY is never prefixed with NEXT_PUBLIC_", () => {
+  it("ensures OPENAI_API_KEY is never prefixed with NEXT_PUBLIC_", () => {
     const envExamplePath = path.resolve(__dirname, "../../.env.example");
     const content = fs.readFileSync(envExamplePath, "utf-8");
 
+    expect(content).not.toContain("NEXT_PUBLIC_OPENAI");
     expect(content).not.toContain("NEXT_PUBLIC_GROQ");
-    expect(content).toContain("GROQ_API_KEY=");
+    expect(content).toContain("OPENAI_API_KEY=");
+    expect(content).not.toContain("GROQ_API_KEY");
   });
 
-  it("ensures no client components import from server-only AI modules", () => {
+  it("ensures no client components import from server-only AI modules or access secret env vars", () => {
     const componentsDir = path.resolve(__dirname, "../../src/components");
     const featuresDir = path.resolve(__dirname, "../../src/features");
 
@@ -26,8 +28,11 @@ describe("Secret Isolation & Security Audit", () => {
 
           // Client components should not import directly from server-side providers
           if (fileContent.includes('"use client"') || fileContent.includes("'use client'")) {
+            expect(fileContent).not.toContain('from "@/lib/ai/openai.provider"');
             expect(fileContent).not.toContain('from "@/lib/ai/groq.provider"');
+            expect(fileContent).not.toContain('from "openai"');
             expect(fileContent).not.toContain('from "groq-sdk"');
+            expect(fileContent).not.toContain("process.env.OPENAI_API_KEY");
             expect(fileContent).not.toContain("process.env.GROQ_API_KEY");
           }
         }

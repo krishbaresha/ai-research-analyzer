@@ -2,7 +2,8 @@
 
 > **Status:** Active / Authoritative  
 > **Protocol:** HTTP/1.1 REST + JSON (Next.js Route Handlers)  
-> **Base URL:** `/api`
+> **Base URL:** `/api`  
+> **Active AI Engine:** OpenAI Responses API (`gpt-4o-mini`)
 
 ---
 
@@ -16,9 +17,9 @@ All API routes return responses conforming to the standard JSON envelope:
   "success": true,
   "data": { ... },
   "metadata": {
-    "timestamp": "2026-11-03T11:00:00Z",
-    "processingTimeMs": 1420,
-    "model": "llama-3.3-70b-versatile"
+    "timestamp": "2026-11-03T11:40:00Z",
+    "processingTimeMs": 1150,
+    "model": "gpt-4o-mini"
   }
 }
 ```
@@ -43,8 +44,9 @@ All API routes return responses conforming to the standard JSON envelope:
 ### Standard Error Codes
 - `BAD_REQUEST` (400) - Missing or malformed JSON payload.
 - `VALIDATION_ERROR` (422) - Input failed Zod validation schema.
-- `AI_AUTH_ERROR` (401/500) - Server missing or invalid `GROQ_API_KEY`.
-- `AI_RATE_LIMIT` (429) - Groq rate limit reached; retry after backoff.
+- `AI_AUTH_ERROR` (401) - Server missing or invalid `OPENAI_API_KEY`.
+- `AI_RATE_LIMIT` (429) - OpenAI rate limit reached; retry after backoff.
+- `AI_QUOTA_EXCEEDED` (402) - Account credit limit or quota exceeded.
 - `AI_TIMEOUT` (504) - Inference request exceeded timeout window.
 - `AI_MALFORMED_OUTPUT` (502) - Model generated invalid JSON failing schema validation.
 - `PAYLOAD_TOO_LARGE` (413) - Upload exceeds maximum upload size (10MB).
@@ -58,86 +60,86 @@ All API routes return responses conforming to the standard JSON envelope:
 ### 2.1 Research Topic Analysis
 
 #### `POST /api/research/analyze-topic`
-Submits a user-provided research topic or question for structured server-side analysis via Groq LPU inference (`groq.chat.completions.create`).
+Synthesizes a topic into a structured, academic research report using the OpenAI Responses API.
 
-- **Authentication:** Public / Optional User Session (Key managed strictly on server)
+- **Authentication:** Public route; uses server-side `OPENAI_API_KEY`.
 - **Content-Type:** `application/json`
 
 **Request Body:**
 ```json
 {
-  "topic": "Impact of retrieval-augmented generation on hallucination reduction in academic literature review",
-  "scope": "Focus on computer science papers published between 2023 and 2025"
+  "topic": "How do transformer attention mechanisms compare to state space models (Mamba) in processing long scientific papers?",
+  "scope": "Focus on computational complexity and benchmark datasets from 2023-2025"
 }
 ```
 
-**Response (`200 OK`):**
+**Field Rules:**
+- `topic` *(string, required)*: Length between 5 and 1000 characters.
+- `scope` *(string, optional)*: Length up to 500 characters.
+
+**Success Response (200 OK):**
 ```json
 {
   "success": true,
   "data": {
-    "id": "res_8f93e2b1",
-    "title": "Retrieval-Augmented Generation for Hallucination Mitigation in Academic Review",
-    "researchQuestion": "Impact of retrieval-augmented generation on hallucination reduction in academic literature review",
-    "scope": "Focus on computer science papers published between 2023 and 2025",
-    "executiveSummary": "This analysis investigates the role of RAG architectures in dampening factual drift...",
-    "backgroundContext": "Standard parametric LLMs suffer from ungrounded hallucinations...",
-    "methodologyOverview": "Empirical studies benchmark factual consistency using ROUGE, BERTScore, and human evaluation...",
+    "title": "Comparative Analysis: Transformer Attention vs. State Space Models",
+    "executiveSummary": "A systematic review of computational efficiency and long-context processing...",
+    "researchQuestion": "How do transformer attention mechanisms compare to state space models (Mamba)...",
+    "scope": "Focus on computational complexity and benchmark datasets from 2023-2025",
     "keyFindings": [
       {
-        "id": "f1",
-        "finding": "RAG reduces ungrounded hallucinations by up to 68% when paired with dense retrieval chunking.",
-        "evidenceSource": "ai_interpretation"
+        "finding": "State Space Models exhibit O(N) linear time and memory scaling with context length...",
+        "confidence": 0.88,
+        "evidenceCategory": "ai_interpretation"
       }
     ],
-    "criticalAnalysis": "While RAG significantly improves factual recall, chunk fragmentation introduces boundary loss...",
-    "strengths": [
-      "Dynamic knowledge integration",
-      "Traceable citation capability"
+    "detailedAnalysis": [
+      {
+        "heading": "Computational Complexity Scaling",
+        "paragraphs": [
+          "Transformers utilize quadratic self-attention O(N^2), creating significant memory overhead..."
+        ]
+      }
     ],
+    "methodology": "Systematic synthesis of published architectural benchmarks and empirical complexity analyses.",
     "limitations": [
-      "Retrieval latency overhead",
-      "Sensitivity to noisy retrieval results"
+      "Topic analysis is model-synthesized background analysis and does not query live real-time academic databases."
     ],
-    "researchGaps": [
-      "Standardized multi-hop reasoning benchmarks across multi-modal academic figures"
+    "furtherResearch": [
+      "Empirical benchmark of hybrid Mamba-Transformer models on whole-book scientific QA tasks."
     ],
-    "conclusion": "RAG represents the prevailing standard for evidence grounding in research tasks.",
-    "suggestedFollowUps": [
-      "How do graph-based RAG architectures compare to dense vector retrieval in hierarchical document synthesis?"
-    ],
-    "evidenceStatus": "ai_interpretation",
-    "modelId": "llama-3.3-70b-versatile",
-    "createdAt": "2026-11-03T11:00:00.000Z"
+    "conclusion": "While Transformers remain dominant for general tasks, SSMs provide superior throughput on extreme context lengths.",
+    "generatedAt": "2026-11-03T11:40:00Z",
+    "modelUsed": "gpt-4o-mini"
   },
   "metadata": {
-    "timestamp": "2026-11-03T11:00:00.000Z",
-    "processingTimeMs": 1340,
-    "model": "llama-3.3-70b-versatile"
+    "timestamp": "2026-11-03T11:40:00Z",
+    "processingTimeMs": 1150,
+    "model": "gpt-4o-mini"
   }
 }
 ```
 
 ---
 
-### 2.2 Health & Status
+### 2.2 System Health Check
 
 #### `GET /api/health`
-Checks server health and validates Groq configuration status without exposing API key secrets.
+Checks server runtime status and AI configuration without exposing credentials.
 
-**Response (`200 OK`):**
+**Response (200 OK):**
 ```json
 {
   "success": true,
   "data": {
     "status": "healthy",
     "phase": 2,
-    "provider": "groq",
-    "groqConfigured": true,
-    "configuredModel": "llama-3.3-70b-versatile",
+    "provider": "openai",
+    "openAIConfigured": true,
+    "configuredModel": "gpt-4o-mini",
     "maxUploadBytes": 10485760,
     "runtime": "nodejs",
-    "timestamp": "2026-11-03T11:00:00.000Z"
+    "timestamp": "2026-11-03T11:40:00Z"
   }
 }
 ```

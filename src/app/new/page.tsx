@@ -68,7 +68,7 @@ export default function NewResearchPage() {
     setValidationError(null);
     setApiError(null);
     setIsLoading(true);
-    setLoadingStep("Connecting to Groq LPU inference engine...");
+    setLoadingStep("Connecting to OpenAI Responses API...");
 
     try {
       const timer1 = setTimeout(() => {
@@ -228,7 +228,7 @@ export default function NewResearchPage() {
                       variant={
                         apiError.code === "AI_AUTH_ERROR"
                           ? "warning"
-                          : apiError.code === "AI_RATE_LIMIT"
+                          : apiError.code === "AI_RATE_LIMIT" || apiError.code === "AI_QUOTA_EXCEEDED"
                           ? "destructive"
                           : "default"
                       }
@@ -236,9 +236,11 @@ export default function NewResearchPage() {
                       <AlertCircle className="h-4 w-4" />
                       <AlertTitle className="text-xs font-bold">
                         {apiError.code === "AI_AUTH_ERROR"
-                          ? "Groq API Key Required"
+                          ? "OpenAI API Key Required"
                           : apiError.code === "AI_RATE_LIMIT"
-                          ? "Groq Rate Limit Exceeded"
+                          ? "OpenAI Rate Limit Exceeded"
+                          : apiError.code === "AI_QUOTA_EXCEEDED"
+                          ? "OpenAI Quota Exceeded"
                           : "Inference Error"}
                       </AlertTitle>
                       <AlertDescription className="text-xs leading-relaxed space-y-1 mt-1">
@@ -247,7 +249,7 @@ export default function NewResearchPage() {
                           <div className="mt-2 rounded bg-background/80 p-2 font-mono text-[11px] text-foreground border border-border">
                             Add to <code>.env.local</code>:
                             <br />
-                            <code>GROQ_API_KEY=your_groq_api_key_here</code>
+                            <code>OPENAI_API_KEY=your_openai_api_key_here</code>
                           </div>
                         )}
                       </AlertDescription>
@@ -270,7 +272,7 @@ export default function NewResearchPage() {
                 </CardContent>
                 <CardFooter className="flex justify-between border-t border-border pt-4">
                   <span className="text-xs text-muted-foreground">
-                    Inference: <strong className="text-foreground">Server-Side Groq API</strong>
+                    Inference: <strong className="text-foreground">Server-Side OpenAI Responses API</strong>
                   </span>
                   <Button
                     type="submit"
@@ -342,7 +344,7 @@ export default function NewResearchPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="text-xs text-muted-foreground leading-relaxed">
-                Groq API keys remain strictly on the server. No secrets are ever exposed to client bundles or browser responses.
+                OpenAI API keys remain strictly on the server. No secrets are ever exposed to client bundles or browser responses.
               </CardContent>
             </Card>
           </div>

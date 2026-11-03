@@ -106,3 +106,23 @@
   - Decouples UI and business logic from any specific AI provider.
   - Utilizes OpenAI's modern Responses API with built-in output formatting.
   - Isolates `OPENAI_API_KEY` on the server and protects client code.
+
+---
+
+## ADR-008: Full Removal of Groq SDK & Activation of OpenAI as Sole Active Provider
+
+- **Date:** 2026-11-03
+- **Status:** Accepted
+- **Context:**
+  While ADR-007 introduced the OpenAI provider abstraction, `groq-sdk` and legacy Groq UI indicators remained lingering in the codebase. The user mandated removing `groq-sdk` entirely and making OpenAI the sole, active, verified default AI provider across the application.
+- **Decision:**
+  1. Remove `groq-sdk` and obsolete Groq files (`src/lib/ai/groq.provider.ts`, `tests/integration/groq-provider.test.ts`).
+  2. Configure `getAIProvider()` to instantiate `OpenAIProvider`.
+  3. Enforce `OPENAI_API_KEY` and `OPENAI_MODEL` in `serverEnvSchema`.
+  4. Update health check `/api/health` to return `provider: "openai"`.
+  5. Update all frontend indicators, diagnostics, and error messages to reflect OpenAI.
+  6. Maintain 100% test coverage with mocked responses and security boundary tests.
+- **Consequences:**
+  - Dependency footprint reduced.
+  - Zero obsolete Groq references in active application code.
+  - Consistent developer experience and verified end-to-end OpenAI wiring.

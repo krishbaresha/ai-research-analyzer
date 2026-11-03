@@ -3,10 +3,11 @@ import { z } from "zod";
 /**
  * Server-only environment variables schema.
  * All variables here are validated on the server.
+ * Secrets are never exposed to the client bundle.
  */
 export const serverEnvSchema = z.object({
-  GROQ_API_KEY: z.string().min(1, "GROQ_API_KEY is required on the server").optional(),
-  GROQ_MODEL: z.string().default("llama-3.3-70b-versatile"),
+  OPENAI_API_KEY: z.string().min(1, "OPENAI_API_KEY is required on the server").optional(),
+  OPENAI_MODEL: z.string().default("gpt-4o-mini"),
   MAX_UPLOAD_SIZE_BYTES: z
     .string()
     .transform((val) => parseInt(val, 10))
@@ -19,7 +20,7 @@ export type ServerEnv = z.infer<typeof serverEnvSchema>;
 
 /**
  * Validates server environment and returns clean sanitized configuration.
- * Never prints secret values.
+ * Never prints or leaks secret values.
  */
 export function getServerConfig() {
   const result = serverEnvSchema.safeParse(process.env);
@@ -32,8 +33,8 @@ export function getServerConfig() {
   const parsed = result.success ? result.data : serverEnvSchema.parse({});
 
   return {
-    hasGroqKey: Boolean(process.env.GROQ_API_KEY),
-    model: parsed.GROQ_MODEL,
+    hasOpenAIKey: Boolean(process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY.trim().length > 0),
+    model: parsed.OPENAI_MODEL,
     maxUploadSizeBytes: parsed.MAX_UPLOAD_SIZE_BYTES,
     nodeEnv: parsed.NODE_ENV,
   };

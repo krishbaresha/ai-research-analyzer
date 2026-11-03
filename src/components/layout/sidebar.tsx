@@ -127,7 +127,7 @@ export function Sidebar({ className }: { className?: string }) {
             <span>AI Provider</span>
           </div>
           <div className="mt-1 text-[11px] font-mono text-muted-foreground truncate">
-            Groq LPU Inference
+            OpenAI Responses API
           </div>
           <div className="mt-2.5 flex items-center justify-between text-[10px] text-muted-foreground">
             <span className="flex items-center gap-1.5">
