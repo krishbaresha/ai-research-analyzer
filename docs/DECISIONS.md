@@ -203,3 +203,33 @@
   - Zero external vector DB or embedding API dependencies.
   - Deterministic, low-latency, zero-cost retrieval across all extracted pages.
   - Clear user transparency and verified citations without hallucination.
+
+---
+
+## ADR-012: Expanded Phase 5 Scope — Multi-Source Scholarly Paper Import, SSRF Defense Architecture, and In-Memory Research Library Foundation
+
+- **Date:** 2026-11-03
+- **Status:** Accepted (Planning Phase 5)
+- **Context:**
+  While Phase 3 and Phase 4 established local PDF uploads and grounded analysis, academic researchers acquire papers through multiple channels: direct preprint URLs, arXiv IDs, and DOIs. Additionally, users need a central catalog (Research Library) to browse and manage ingested literature rather than losing track of papers. Fetching arbitrary remote content introduces Server-Side Request Forgery (SSRF) vulnerabilities (e.g., reaching internal cloud metadata endpoints `169.254.169.254` or private VPC subnets).
+- **Decision:**
+  1. **Multi-Source Paper Ingestion:**
+     - Expand Phase 5 beyond basic document chat to incorporate three remote import channels: public HTTPS PDF URLs, arXiv papers (by ID or URL), and DOI metadata resolution (via Crossref / OpenAlex / Semantic Scholar).
+  2. **Strict SSRF Defense Layer (`src/lib/security/ssrf.ts`):**
+     - Enforce HTTPS protocol strictly.
+     - Perform pre-fetch DNS resolution and validate IP addresses against a blocklist of private, loopback, link-local, and cloud metadata CIDR ranges (`127.0.0.0/8`, `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `169.254.0.0/16`, `::1`, `fc00::/7`).
+     - Limit redirects to 3 hops, re-verifying SSRF safety on each hop.
+     - Enforce maximum download size of 15MB and socket timeouts of 15 seconds.
+  3. **In-Memory Research Library Foundation:**
+     - Extend `DocumentStore` to index paper metadata (`title`, `authors`, `abstract`, `year`, `venue`, `doi`, `arxivId`, `sourceType`).
+     - Provide frontend library overview on the dashboard for browsing and reopening papers.
+  4. **Event Architecture Hook:**
+     - Implement a synchronous in-memory event bus (`src/lib/events/event-bus.ts`) emitting domain lifecycle events (`paper.imported`, `paper.analyzed`, `chat.message_sent`) to lay the groundwork for Phase 10 automations.
+  5. **Phase Scope Boundaries Maintained:**
+     - Do not introduce persistent databases (PostgreSQL/Supabase deferred to Phase 6).
+     - Do not introduce vector databases or external embedding APIs (deferred to Phase 7).
+     - Do not introduce paid search APIs.
+- **Consequences:**
+  - Robust scholarly ingestion workflows while preventing internal network probing or cloud credential exfiltration.
+  - Seamless foundation for future persistence and multi-document synthesis phases.
+

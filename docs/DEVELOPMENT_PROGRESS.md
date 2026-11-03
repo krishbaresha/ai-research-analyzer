@@ -9,16 +9,16 @@
 
 | Phase | Description | Status | Completion Date |
 |---|---|---|---|
-| **Phase 0** | Repository Audit, System Architecture & Documentation Setup | **COMPLETED** | 2026-11-03 |
 | **Phase 1** | Foundation, App Shell, and Design System | **COMPLETED** | 2026-11-03 |
 | **Phase 2** | Server-Side OpenAI Integration (Responses API) & Topic-Based Analysis | **COMPLETED** | 2026-11-03 |
 | **Phase 3** | PDF Upload and Reliable Text Extraction | **COMPLETED** | 2026-11-03 |
 | **Phase 4** | PDF Analysis and Evidence-Grounded Reports | **COMPLETED** | 2026-11-03 |
-| **Phase 5** | Document Chat (Grounded Q&A) | **COMPLETED** | 2026-11-03 |
-| **Phase 6** | Persistence, Projects, and History | Planned (Next) | — |
-| **Phase 7** | Multi-Document Comparison and RAG Improvements | Planned | — |
-| **Phase 8** | Web Research and External Sources | Planned | — |
-| **Phase 9** | Export, Polish, and Release Readiness | Planned | — |
+| **Phase 5** | Document Chat + Scholarly Paper Import + Research Library Foundation | **NEXT / IN PROGRESS** (Expanded Scope Pending) | — |
+| **Phase 6** | Persistence, Projects, and History | Planned | — |
+| **Phase 7** | Multi-Document Synthesis and Literature Reviews | Planned | — |
+| **Phase 8** | Web Research and Live Academic Source Discovery | Planned | — |
+| **Phase 9** | Export, Polish, and Production Readiness | Planned | — |
+| **Phase 10** | Extensible Research Automation System | Planned | — |
 
 ---
 
@@ -142,9 +142,11 @@
 
 ---
 
-## Phase 5: Document Chat & Evidence-Grounded Q&A (Completed)
+## Phase 5: Document Chat + Scholarly Paper Import + Research Library Foundation (Next / Prototype In Progress)
 
-### 1. Requirements Delivered
+> **Clarification:** An initial in-memory document chat prototype featuring deterministic BM25 retrieval and claim citations was developed in commit `267df7c` with 92 passing tests. However, the user has formally expanded the scope of Phase 5 to encompass **Scholarly Paper Import (URL, arXiv, DOI)**, **SSRF Defense**, **Research Library Foundation**, and **Event Architecture Foundation**. Implementation of these expanded capabilities has **NOT** been started.
+
+### 1. Requirements Delivered in Chat Prototype (Commit `267df7c`)
 - **Full-Document Scope & Deterministic BM25 Passage Retrieval (`src/lib/retrieval/retriever.ts`):**
   - Designed and implemented a lightweight, deterministic server-side passage retrieval engine operating across ALL extracted pages (1 to N) stored in `DocumentStore` without Phase 4 sampling restrictions.
   - Chunks document pages into overlapping segments (~900 chars, 150-char overlap) strictly preserving 1-indexed original page numbers.
@@ -201,6 +203,15 @@
   - `pnpm test`: 92 / 92 tests passed across 17 test files.
   - `pnpm build`: Next.js production build succeeded with all 11 routes compiled.
 
-### 3. Next Phase Readiness
-- Ready for **Phase 6: Persistence, Projects, and History**.
-- Scope boundary enforced: Phase 6 has NOT been started. Zero database libraries (PostgreSQL, Supabase, Prisma) or multi-document comparison tools introduced. Storage and conversation state remain strictly in-memory per ADR-004.
+### 3. Expanded Phase 5 Scope Requirements (Pending Implementation)
+1. **Public PDF URL Ingestion:** Stream remote HTTPS PDFs into the extraction pipeline with size bounds (15MB) and timeout limits (15s).
+2. **arXiv Paper Import:** Ingest arXiv papers by ID or URL, retrieving metadata via arXiv API and downloading official preprints.
+3. **DOI Paper Import:** Ingest papers by DOI, retrieving metadata via Crossref / OpenAlex / Semantic Scholar, and resolving open-access PDFs via Unpaywall.
+4. **SSRF Defense Suite:** Implement strict IP resolution validation, blocking loopback, link-local, and cloud metadata ranges before HTTP dispatch.
+5. **In-Memory Research Library Foundation:** Catalog papers with metadata and provide a dashboard library view.
+6. **Event Architecture Hook:** Synchronous in-memory event bus emitting domain lifecycle events.
+
+### 4. Phase Boundary Enforced
+- Phase 5 expanded implementation has **NOT** been started in this turn.
+- Zero source code changes made in `src/`.
+- Zero database libraries (PostgreSQL, Supabase) or external vector DBs introduced. Storage remains strictly in-memory per ADR-004.

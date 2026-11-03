@@ -19,7 +19,7 @@
 | Skill Name | Category | Source / Implementation | Status | Purpose & Capabilities |
 |---|---|---|---|---|
 | `ui-ux-pro-max` | UI / UX Design | Antigravity Builtin / Local Config | Installed & Active | Design system guidance, responsive patterns, contrast, typography, spacing tokens, and UX guidelines. |
-| `context7-mcp` | Documentation | MCP Tool Integration | Installed & Active | Queries real-time official docs and API signatures for Next.js, React, Tailwind, and Groq. |
+| `context7-mcp` | Documentation | MCP Tool Integration | Installed & Active | Queries real-time official docs and API signatures for Next.js, React, Tailwind, and OpenAI SDK. |
 | `managing-python-dependencies` | Runtime / Tooling | Builtin Configuration | Available | Manages environment constraints if any auxiliary Python scripts are required. |
 | `accidental-data-loss-prevention` | Safety & Verification | Builtin Configuration | Active | Enforces explicit user verification before destructive actions or deletions. |
 
@@ -39,4 +39,4 @@
 ## 4. Safety & Security Rules for Skills
 - Never execute unvetted installation bash/powershell scripts from untrusted external URLs.
 - Do not grant skills file-system access outside the repository root.
-- Never pass secret API keys (`GROQ_API_KEY`) to external skill inspection tools.
+- Never pass secret API keys (`OPENAI_API_KEY`) to external skill inspection tools.

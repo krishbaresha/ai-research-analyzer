@@ -1,7 +1,7 @@
 # AI Research Analyzer — System Architecture
 
 > **Document Status:** Active / Authoritative  
-> **Last Updated:** 2026-11-03 (Phase 5: Document Chat & Evidence-Grounded Q&A)  
+> **Last Updated:** 2026-11-03 (Post-Phase 4 Context Synchronization)  
 > **Target Framework:** Next.js 15 (App Router) + TypeScript + Tailwind CSS
 
 ---
@@ -17,10 +17,12 @@
    - `retrieved_source`: Backed by an external source.
    - `ai_interpretation`: Analytical extrapolation by the model.
    - `not_established`: Stating explicitly when evidence is missing.
-6. **Untrusted Data Boundary:** Uploaded PDFs, web content, and user topics are treated strictly as untrusted data inputs:
+6. **Untrusted Data Boundary:** Uploaded PDFs, web content, remote URLs, and user topics are treated strictly as untrusted data inputs:
    - File validation checks magic bytes (`%PDF-`), enforces size limits (`MAX_UPLOAD_SIZE_BYTES`), and sanitizes filenames against directory traversal (`..`, slashes).
-   - Prompts encapsulate user inputs with explicit XML isolation delimiters (`<user_topic>`, `<document_passage page="N">`).
-7. **Progressive Resilience:** Failures in external LLM calls or PDF extraction are caught by standardized domain errors (`PDFValidationError`, `PDFPayloadTooLargeError`, `PDFInvalidSignatureError`, `PDFCorruptedError`, `PDFEncryptedError`, `AIAuthError`, `AIRateLimitError`, `AIResponseParseError`) and returned as actionable envelopes.
+   - Prompts encapsulate user inputs with explicit XML isolation delimiters (`<user_topic>`, `<document_passage page="N">`, `<retrieved_passage page="N">`).
+7. **SSRF Defense Architecture (Mandatory for Remote Fetching):**
+   - Outbound requests validate protocols (HTTPS only), resolve DNS before connecting, deny private/loopback IP blocks, and restrict redirect chains.
+8. **Progressive Resilience:** Failures in external LLM calls or PDF extraction are caught by standardized domain errors (`PDFValidationError`, `PDFPayloadTooLargeError`, `PDFInvalidSignatureError`, `PDFCorruptedError`, `PDFEncryptedError`, `AIAuthError`, `AIRateLimitError`, `AIResponseParseError`) and returned as actionable envelopes.
 
 ---
 
@@ -66,6 +68,10 @@
        ├── prompts.ts            (Defensive prompt templates, XML boundaries, schema instructions)
        ├── parsers.ts            (Markdown fence sanitization & Zod schema validation)
        └── index.ts              (Provider factory: getAIProvider())
+   - src/lib/security/ (Planned Phase 5)
+       └── ssrf.ts               (SSRF validation, IP blocklists, DNS resolution checks)
+   - src/lib/events/ (Planned Phase 5/10)
+       └── event-bus.ts          (Synchronous in-memory event dispatcher for research automations)
         │
         ▼
 [ Data Access & Persistence Layer ]
@@ -89,10 +95,11 @@
 ```
 e:\Research Analyzer\
 ├── docs/                              # Technical specifications & ADRs
+│   ├── PROJECT_CONTEXT.md             # Master authoritative engineering context & rules
 │   ├── ARCHITECTURE.md                # System architecture (this document)
 │   ├── API_SPECIFICATION.md           # REST contract, request/response envelopes
 │   ├── DATABASE_SCHEMA.md             # Supabase / PostgreSQL schema (Phase 6)
-│   ├── DECISIONS.md                   # Architecture Decision Records (ADR-001 - ADR-009)
+│   ├── DECISIONS.md                   # Architecture Decision Records (ADR-001 - ADR-011)
 │   ├── DEVELOPMENT_PROGRESS.md        # Phase-by-phase implementation log
 │   └── TESTING.md                     # Test strategy, automated suites & smoke-test procedure
 ├── src/
@@ -100,7 +107,9 @@ e:\Research Analyzer\
 │   │   ├── api/
 │   │   │   ├── documents/
 │   │   │   │   ├── upload/route.ts    # POST: multipart/form-data upload & extraction
-│   │   │   │   └── [id]/route.ts      # GET: retrieve extracted document
+│   │   │   │   ├── [id]/route.ts      # GET: retrieve extracted document
+│   │   │   │   ├── [id]/analyze/      # POST: grounded document analysis
+│   │   │   │   └── [id]/chat/         # POST: grounded document chat; DELETE: clear session
 │   │   │   ├── health/route.ts        # System health & engine config
 │   │   │   └── research/
 │   │   │       └── analyze-topic/     # POST: topic research analysis
@@ -113,15 +122,17 @@ e:\Research Analyzer\
 │   │   └── ui/                        # Button, Card, Badge (as span), Alert, Textarea, Skeleton
 │   ├── features/
 │   │   ├── pdf-analysis/components/   # DocumentViewer, DocumentReportViewer, interactive citations
+│   │   ├── document-chat/components/  # DocumentChat, claim citations, sources accordion
 │   │   └── research/components/       # ReportViewer, SectionCard, EvidenceBadge
 │   ├── lib/
 │   │   ├── pdf/                       # PDF validator, unpdf extractor, budgeter
-│   │   ├── storage/                   # DocumentStore in-memory repository
+│   │   ├── storage/                   # DocumentStore & ConversationStore in-memory repositories
+│   │   ├── retrieval/                 # BM25 passage chunking and retrieval
 │   │   ├── ai/                        # OpenAI Responses provider, prompts, and parsers
-│   │   ├── validation/                # Zod schemas (research.schema.ts, env.schema.ts)
+│   │   ├── validation/                # Zod schemas (research.schema.ts, chat.schema.ts, env.schema.ts)
 │   │   └── utils.ts                   # Tailwind utility merge
-│   └── types/                         # TypeScript interfaces (document.ts, research.ts, api.ts)
-└── tests/                             # Vitest test suite (92 tests)
+│   └── types/                         # TypeScript interfaces (document.ts, research.ts, chat.ts, api.ts)
+└── tests/                             # Vitest test suite (92 tests across 17 files)
     ├── fixtures/                      # Mock PDF buffers & JSON reports
     ├── integration/                   # Document upload, document analysis, document chat & OpenAI integration tests
     ├── security/                      # Secret isolation, boundary audit & chat injection tests
@@ -133,7 +144,7 @@ e:\Research Analyzer\
 ## 4. PDF Text Extraction & Integrity Standards
 
 1. **Extraction Engine:** Pure TypeScript/JavaScript runtime parsing via `unpdf` with direct access to Mozilla's pdf.js text streams.
-2. **Page Boundary Preservation:** Extracted text is stored per page (1-indexed) with individual character and word counts, ensuring citations in subsequent phases refer directly to actual document pages.
+2. **Page Boundary Preservation:** Extracted text is stored per page (1-indexed) with individual character and word counts, ensuring citations refer directly to actual document pages.
 3. **Scanned / Image-Only Detection:**
    - Threshold: Total extracted text < 50 characters or average words per page < 5 across the document.
    - Outcome: Automatically sets `isScanned: true` and `ocrRequired: true`, rendering an honest disclaimer that OCR is not supported in the MVP.
@@ -164,7 +175,7 @@ e:\Research Analyzer\
 
 ---
 
-## 6. Document Chat & Deterministic Passage Retrieval (Phase 5)
+## 6. Document Chat & Deterministic Passage Retrieval (Phase 5 Foundation)
 
 1. **Full-Document Scope (Zero Phase 4 Sampling Restrictions):**
    - Document Q&A searches across ALL extracted pages (1 to N) stored in `DocumentStore`, ensuring findings on any page can be answered.
@@ -172,7 +183,7 @@ e:\Research Analyzer\
    - Pages are segmented into overlapping passages (~900 chars with 150-char overlap) retaining exact 1-indexed page associations.
    - Queries are normalized and filtered for stop words, ranking passages with BM25 term frequency-inverse document frequency weighting.
    - Explicit page numbers in queries (e.g., "what is on page 4?") are detected and boosted.
-   - Top-ranked passages (bounded by 5 chunks and 10,000 chars) are supplied to the prompt. If no passages match, returns an empty set so the model abstains rather than hallucinations.
+   - Top-ranked passages (bounded by 5 chunks and 10,000 chars) are supplied to the prompt. If no passages match, returns an empty set so the model abstains rather than hallucinating.
 3. **Bounded Ephemeral Session Management (`src/lib/storage/conversation-store.ts`):**
    - Sessions are identified by `conv_${timestamp}_${random}` and strictly associated with the target `documentId`.
    - Maximum 20 messages per session with LRU eviction across 50 active sessions.
@@ -181,3 +192,54 @@ e:\Research Analyzer\
    - Models return structured claims with `pageReferences` and source relevance explanations.
    - Four evidence states: `supported`, `partially_supported`, `not_found`, and `interpretation`.
    - Clicking any citation badge jumps directly to the cited page in the Document Workspace reader.
+
+---
+
+## 7. Expanded Phase 5 Architecture: Scholarly Import, SSRF Defense & Research Library
+
+```
+[ Ingestion Sources ]
+   ├── Local File Upload (multipart/form-data)
+   ├── Public PDF URL (HTTPS fetch)
+   ├── arXiv Paper (ID/URL -> metadata & PDF download)
+   └── DOI Paper (Crossref / OpenAlex / Semantic Scholar -> metadata & open-access PDF)
+          │
+          ▼
+[ SSRF Defense & Request Sanitizer (`src/lib/security/ssrf.ts`) ]
+   ├── Enforce HTTPS protocol
+   ├── Resolve DNS & block loopback/private IPs (127.0.0.0/8, 10.0.0.0/8, 192.168.0.0/16, etc.)
+   ├── Verify Content-Type & Content-Length headers
+   └── Cap redirects (max 3) and transfer size (15 MB)
+          │
+          ▼
+[ Smart Document Processing Pipeline ]
+   ├── Validate %PDF- magic bytes
+   ├── Extract text & page boundaries via unpdf
+   ├── Run scanned/image-only heuristics
+   └── Assemble PaperMetadata (title, authors, year, venue, DOI, arXiv ID)
+          │
+          ▼
+[ In-Memory Research Library (`src/lib/storage/document-store.ts`) ]
+   ├── Catalog papers with full metadata & page index
+   ├── Provide queryable library catalog for frontend dashboard
+   └── Emit Domain Event: `paper.imported`
+          │
+          ▼
+[ Event Architecture Foundation (`src/lib/events/event-bus.ts`) ]
+   └── In-memory pub/sub preparing for Phase 10 research automations
+```
+
+---
+
+## 8. Long-Term 10-Phase Roadmap
+
+1. **Phase 1: Foundation, App Shell & Design System (Done)** — Next.js 15, Swiss Modernism 2.0.
+2. **Phase 2: Server-Side OpenAI Integration & Topic Research (Done)** — OpenAI Responses API, topic reports.
+3. **Phase 3: PDF Upload & Reliable Text Extraction (Done)** — `unpdf` page extraction, scanned PDF detection.
+4. **Phase 4: PDF Analysis & Evidence-Grounded Reports (Done)** — 12-section reports, context budgeting, citations.
+5. **Phase 5: Document Chat + Scholarly Paper Import + Research Library Foundation (Next)** — Grounded Q&A, URL/arXiv/DOI import, SSRF defense, library foundation, event bus.
+6. **Phase 6: Persistence, Projects & Research History (Planned)** — PostgreSQL/Supabase database integration.
+7. **Phase 7: Multi-Document Synthesis & Literature Reviews (Planned)** — Cross-paper comparative analysis, matrices.
+8. **Phase 8: Web Research & Live Academic Source Discovery (Planned)** — Controlled academic search & preprint discovery.
+9. **Phase 9: Export, Polish & Production Readiness (Planned)** — PDF/BibTeX export, WCAG AA compliance.
+10. **Phase 10: Extensible Research Automation System (Planned)** — Event-driven background monitors, automated digests.
