@@ -1,7 +1,7 @@
 # AI Research Analyzer — System Architecture
 
 > **Document Status:** Active / Authoritative  
-> **Last Updated:** 2026-11-03 (Phase 2: Complete Migration to OpenAI Responses API)  
+> **Last Updated:** 2026-11-03 (Phase 3: PDF Upload & Reliable Text Extraction)  
 > **Target Framework:** Next.js 15 (App Router) + TypeScript + Tailwind CSS
 
 ---
@@ -10,14 +10,17 @@
 
 1. **Separation of Concerns:** Strict layer isolation between presentation (`src/app`, `src/components`), domain features (`src/features/*`), infrastructure/services (`src/lib/*`), and shared types/contracts (`src/types/*`).
 2. **Server-Side AI Confidentiality:** All interactions with AI APIs reside solely on the server. No client component or browser bundle shall ever import or receive `OPENAI_API_KEY`.
-3. **Modular AI Provider Abstraction:** Inference services implement an abstract `AIProvider` interface (`src/lib/ai/provider.ts`), decoupling domain logic from specific model providers. The official **OpenAI SDK** (`openai`) with the modern **Responses API** (`client.responses.create()`) is the active default provider (`OpenAIProvider`), with a robust fallback to structured completions.
-4. **Evidence-Grounded Reporting & Zero Hallucination:** Claims produced by the model must be explicitly categorized:
-   - `from_document`: Grounded with extracted text and page numbers.
+3. **Phase-Isolated Document Processing:** PDF parsing, validation, and text extraction are strictly server-side processes operating independently of LLM calls. In Phase 3, zero document content is transmitted to external AI providers.
+4. **Modular AI Provider Abstraction:** Inference services implement an abstract `AIProvider` interface (`src/lib/ai/provider.ts`), decoupling domain logic from specific model providers. The official **OpenAI SDK** (`openai`) with the modern **Responses API** (`client.responses.create()`) is the active default provider (`OpenAIProvider`).
+5. **Evidence-Grounded Reporting & Zero Hallucination:** Claims produced by the model must be explicitly categorized:
+   - `from_document`: Grounded with extracted text and exact page numbers.
    - `retrieved_source`: Backed by an external source.
    - `ai_interpretation`: Analytical extrapolation by the model.
    - `not_established`: Stating explicitly when evidence is missing.
-5. **Untrusted Data Boundary:** Uploaded PDFs, web content, and user topics are treated strictly as untrusted data inputs. They are fed into model prompts with explicit XML isolation delimiters (`<user_topic>`, `<scope_constraints>`) and defensive system prompting to prevent prompt injection.
-6. **Progressive Resilience:** Failures in external LLM calls, rate limits, or malformed outputs are caught by standardized domain errors (`AIAuthError`, `AIRateLimitError`, `AIQuotaExceededError`, `AITimeoutError`, `AIResponseParseError`) and returned as actionable envelopes.
+6. **Untrusted Data Boundary:** Uploaded PDFs, web content, and user topics are treated strictly as untrusted data inputs:
+   - File validation checks magic bytes (`%PDF-`), enforces size limits (`MAX_UPLOAD_SIZE_BYTES`), and sanitizes filenames against directory traversal (`..`, slashes).
+   - Prompts encapsulate user inputs with explicit XML isolation delimiters (`<user_topic>`, `<document_passage page="N">`).
+7. **Progressive Resilience:** Failures in external LLM calls or PDF extraction are caught by standardized domain errors (`PDFValidationError`, `PDFPayloadTooLargeError`, `PDFInvalidSignatureError`, `PDFCorruptedError`, `PDFEncryptedError`, `AIAuthError`, `AIRateLimitError`, `AIResponseParseError`) and returned as actionable envelopes.
 
 ---
 
@@ -25,52 +28,51 @@
 
 ```
 [ Browser / Client ]
-        │  (User interaction, UI state, accessible forms)
+        │  (User interaction, drag-and-drop file upload, accessible UI)
         ▼
 [ Presentation & Route Layer ]
    - src/app/ (Next.js App Router: layouts, pages, loading/error boundaries)
-   - src/components/ui/ (Atomic, accessible Swiss Modernism 2.0 components)
+   - src/components/ui/ (Atomic, accessible Swiss Modernism 2.0 components: Badge as span, Button, Card)
    - src/components/layout/ (App shell, navigation, header, sidebar)
         │
         ▼
 [ Domain Feature Layer ]
    - src/features/research/ (Topic analysis forms, report viewer, evidence badges)
-   - src/features/pdf-analysis/ (Upload dropzone, extraction preview, coverage stats)
-   - src/features/document-chat/ (Grounded Q&A panel, citation viewer)
+   - src/features/pdf-analysis/ (Upload dropzone, page-by-page DocumentViewer, scanned warnings)
+   - src/features/document-chat/ (Grounded Q&A panel shell - Phase 5)
    - src/features/projects/ (Project listing, cards, status)
         │
         ▼
-[ Server Boundary: API Handlers & Server Actions ]
-   - src/app/api/research/analyze-topic/route.ts
-   - src/app/api/health/route.ts
-   - src/app/api/documents/upload/route.ts (Phase 3)
-   - src/app/api/documents/[id]/analyze/route.ts (Phase 3)
-   - src/app/api/documents/[id]/chat/route.ts (Phase 4)
+[ Server Boundary: API Handlers & Route Handlers ]
+   - src/app/api/documents/upload/route.ts      (POST: multipart upload & extraction)
+   - src/app/api/documents/[id]/route.ts        (GET: document & extracted pages retrieval)
+   - src/app/api/research/analyze-topic/route.ts (POST: topic analysis via OpenAI Responses API)
+   - src/app/api/health/route.ts                (GET: health check & config diagnostics)
         │
         ▼
 [ Core Services & Processing Engine ]
+   - src/lib/pdf/
+       ├── validator.ts          (Magic bytes %PDF-, size cap, filename sanitization, safe ID)
+       ├── extractor.ts          (unpdf page-by-page extraction, scanned detection, word counting)
+       └── index.ts              (Barrel exports)
    - src/lib/ai/
        ├── provider.ts           (Abstract AIProvider interface & domain error classes)
        ├── openai.provider.ts    (OpenAI Responses API client.responses.create wrapper)
        ├── prompts.ts            (Defensive prompt templates, XML boundaries, schema instructions)
        ├── parsers.ts            (Markdown fence sanitization & Zod schema validation)
        └── index.ts              (Provider factory: getAIProvider())
-   - src/lib/pdf/ (Phase 3)
-       ├── extractor.ts          (PDF parsing, page boundary preservation)
-       ├── chunker.ts            (Context-aware text chunking with metadata)
-       └── validator.ts          (MIME, size, magic bytes, integrity check)
         │
         ▼
 [ Data Access & Persistence Layer ]
-   - src/lib/db/
-       ├── adapter.ts            (In-memory / file / Supabase adapter interface)
-       └── memory-store.ts       (Phase 1-5 development store)
+   - src/lib/storage/
+       └── document-store.ts     (In-memory repository implementing DocumentStore for Phases 1-5)
         │
         ▼
 [ Shared Validation, Types & Utils ]
    - src/lib/validation/         (Zod schemas for inputs, outputs, env)
-   - src/types/                  (Domain types, report contracts, API types)
-   - src/lib/utils.ts            (Formatting, styling helpers, cn utility)
+   - src/types/document.ts       (ExtractedPage, DocumentMetadata, ExtractedDocument)
+   - src/types/research.ts       (ResearchReport, KeyFinding, DetailedSection)
+   - src/lib/utils.ts            (Tailwind utility merge, formatting helpers)
 ```
 
 ---
@@ -79,58 +81,56 @@
 
 ```
 e:\Research Analyzer\
-├── .env.example                       # Documented environment template with OPENAI_API_KEY placeholder
-├── docs/                              # Project technical specifications & ADRs
+├── docs/                              # Technical specifications & ADRs
 │   ├── ARCHITECTURE.md                # System architecture (this document)
 │   ├── API_SPECIFICATION.md           # REST contract, request/response envelopes
 │   ├── DATABASE_SCHEMA.md             # Supabase / PostgreSQL schema (Phase 6)
-│   ├── DECISIONS.md                   # Architecture Decision Records (ADR-001 - ADR-008)
+│   ├── DECISIONS.md                   # Architecture Decision Records (ADR-001 - ADR-009)
 │   ├── DEVELOPMENT_PROGRESS.md        # Phase-by-phase implementation log
 │   └── TESTING.md                     # Test strategy, automated suites & smoke-test procedure
 ├── src/
 │   ├── app/                           # App Router routes & layouts
 │   │   ├── api/
-│   │   │   ├── health/                # System health endpoint (reporting OpenAI config status)
+│   │   │   ├── documents/
+│   │   │   │   ├── upload/route.ts    # POST: multipart/form-data upload & extraction
+│   │   │   │   └── [id]/route.ts      # GET: retrieve extracted document
+│   │   │   ├── health/route.ts        # System health & engine config
 │   │   │   └── research/
-│   │   │       └── analyze-topic/     # POST endpoint for topic research analysis
-│   │   ├── new/                       # Inquiry formulation & report generation workspace
-│   │   ├── settings/                  # Diagnostics & architecture verification
+│   │   │       └── analyze-topic/     # POST: topic research analysis
+│   │   ├── documents/[id]/page.tsx    # Document intelligence workspace
+│   │   ├── new/page.tsx               # Topic research & PDF upload tabs
+│   │   ├── settings/page.tsx          # Diagnostics & architecture verification
 │   │   └── page.tsx                   # Executive overview dashboard
 │   ├── components/                    # Reusable UI & Layouts
 │   │   ├── layout/                    # AppShell, Sidebar, Header
-│   │   └── ui/                        # Button, Card, Badge, Alert, Textarea, Skeleton
+│   │   └── ui/                        # Button, Card, Badge (as span), Alert, Textarea, Skeleton
 │   ├── features/
-│   │   └── research/                  # ReportViewer, SectionCard, EvidenceBadge
+│   │   ├── pdf-analysis/components/   # DocumentViewer (page-by-page reader, stats, scanned banner)
+│   │   └── research/components/       # ReportViewer, SectionCard, EvidenceBadge
 │   ├── lib/
-│   │   ├── ai/                        # OpenAI Responses provider, prompts, and schema parsers
+│   │   ├── pdf/                       # PDF validator, unpdf extractor, scanned detector
+│   │   ├── storage/                   # DocumentStore in-memory repository
+│   │   ├── ai/                        # OpenAI Responses provider, prompts, and parsers
 │   │   ├── validation/                # Zod schemas (research.schema.ts, env.schema.ts)
 │   │   └── utils.ts                   # Tailwind utility merge
-│   └── types/                         # TypeScript interfaces (research.ts, api.ts)
-└── tests/                             # Vitest test suite
-    ├── fixtures/                      # Mock OpenAI report fixture
-    ├── integration/                   # OpenAI provider integration test
-    ├── security/                      # Secret isolation & boundary audit
-    └── unit/                          # Prompts generation & parser tests
+│   └── types/                         # TypeScript interfaces (document.ts, research.ts, api.ts)
+└── tests/                             # Vitest test suite (38 tests)
+    ├── fixtures/                      # Mock PDF buffers & JSON reports
+    ├── integration/                   # Document upload & OpenAI provider integration tests
+    ├── security/                      # Secret isolation & Phase 3 zero-LLM boundary audit
+    └── unit/                          # PDF validator, PDF extractor, prompts, and parser tests
 ```
 
 ---
 
-## 4. AI Provider Architecture & Fallback Strategy
+## 4. PDF Text Extraction & Integrity Standards
 
-The application adopts the **Modular AI Provider Pattern**:
-
-1. **Active Primary Provider:** `OpenAIProvider` (`src/lib/ai/openai.provider.ts`).
-2. **SDK & API:** Official `openai` npm package (v7+) invoking `client.responses.create({ model, instructions, input })`.
-3. **Model Selection:**
-   - Default: `gpt-4o-mini` (high intelligence, fast latency, minimal token cost for structured academic extraction).
-   - Configurable: via `OPENAI_MODEL` environment variable (e.g., `gpt-4o`, `o3-mini`).
-4. **Adaptive Graceful Fallback:** If an older model or endpoint does not support `responses.create()`, `OpenAIProvider` automatically falls back to `client.chat.completions.create({ response_format: { type: "json_object" } })`.
-5. **Contract Validation:** The model response is parsed via `parseAndValidateReport` which sanitizes Markdown markdown blocks (````json ... ````) and verifies the payload against `researchReportSchema`.
-
----
-
-## 5. Security & Isolation Standard
-
-- **No Client Secrets:** `OPENAI_API_KEY` is validated by Zod exclusively on the server (`src/lib/validation/env.schema.ts`). It is never prefixed with `NEXT_PUBLIC_`.
-- **Zero Client Bundle Bleed:** Vitest automated security tests (`tests/security/secret-isolation.test.ts`) recursively verify that neither `openai` SDK nor `OPENAI_API_KEY` is referenced in any client (`"use client"`) file.
-- **Defensive Boundary Delimiters:** Prompts encapsulate user inputs within unambiguous XML tags (`<user_topic>...</user_topic>`), preventing user inputs from hijacking instruction flow.
+1. **Extraction Engine:** Pure TypeScript/JavaScript runtime parsing via `unpdf` with direct access to Mozilla's pdf.js text streams.
+2. **Page Boundary Preservation:** Extracted text is stored per page (1-indexed) with individual character and word counts, ensuring citations in subsequent phases refer directly to actual document pages.
+3. **Scanned / Image-Only Detection:**
+   - Threshold: Total extracted text < 50 characters or average words per page < 5 across the document.
+   - Outcome: Automatically sets `isScanned: true` and `ocrRequired: true`, rendering an honest disclaimer that OCR is not supported in the MVP.
+4. **Security & Input Sanitization:**
+   - Client MIME types are never trusted alone; magic bytes `%PDF-` are verified within the file buffer.
+   - Filenames are sanitized using `path.posix.basename`, removing path traversal sequences (`..`), slashes, and control characters.
+   - Internal document IDs are generated securely (`doc_${timestamp}_${random}`).

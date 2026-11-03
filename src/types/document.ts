@@ -14,6 +14,7 @@ export interface ExtractedPage {
   pageNumber: number;
   text: string;
   charCount: number;
+  wordCount: number;
 }
 
 export interface DocumentChunk {
@@ -27,15 +28,49 @@ export interface DocumentChunk {
   metadata?: Record<string, unknown>;
 }
 
+export interface DocumentMetadata {
+  id: string;
+  originalFilename: string;
+  sanitizedFilename: string;
+  mimeType: string;
+  fileSizeBytes: number;
+  pageCount: number;
+  totalWordCount: number;
+  totalCharCount: number;
+  isScanned: boolean;
+  ocrRequired: boolean;
+  isEncrypted: boolean;
+  uploadedAt: string;
+}
+
+export interface ExtractedDocument {
+  metadata: DocumentMetadata;
+  pages: ExtractedPage[];
+  fullText: string;
+}
+
 export interface DocumentItem {
   id: string;
   projectId?: string;
   originalFilename: string;
+  sanitizedFilename?: string;
   mimeType: string;
   fileSizeBytes: number;
   pageCount?: number;
   processingStatus: DocumentProcessingStatus;
   extractionStatus: ExtractionStatus;
+  isScanned?: boolean;
+  ocrRequired?: boolean;
   textPreview?: string;
   createdAt: string;
+}
+
+export interface DocumentUploadResponse {
+  success: boolean;
+  data?: ExtractedDocument;
+  error?: {
+    code: string;
+    message: string;
+    details?: unknown;
+  };
 }

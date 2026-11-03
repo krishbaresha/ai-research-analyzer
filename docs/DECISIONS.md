@@ -126,3 +126,22 @@
   - Dependency footprint reduced.
   - Zero obsolete Groq references in active application code.
   - Consistent developer experience and verified end-to-end OpenAI wiring.
+
+---
+
+## ADR-009: Adoption of unpdf for Runtime-Compatible, Page-Preserving Text Extraction
+
+- **Date:** 2026-11-03
+- **Status:** Accepted (Phase 3)
+- **Context:**
+  Phase 3 requires server-side PDF text extraction with exact page boundary mapping to support grounded academic citations in subsequent phases. The library must run cross-platform (Windows dev environments, Linux servers, edge/serverless runtimes) without native C++ compilation dependencies (like canvas or node-gyp), and must detect scanned/image-only PDFs.
+- **Decision:**
+  1. Integrate `unpdf` (`^2.1.0`), a modern, pure TypeScript/JavaScript wrapper around Mozilla's `pdfjs-dist`.
+  2. Implement `validatePDFBuffer` in `src/lib/pdf/validator.ts` verifying file size limits (`MAX_UPLOAD_SIZE_BYTES`), `%PDF-` magic bytes header, and filename sanitization via `path.posix.basename`.
+  3. Ensure pure `Uint8Array` conversion to avoid Node.js `Buffer` prototype incompatibilities in pdf.js.
+  4. Automatically flag scanned or image-based PDFs when total extracted text is < 50 characters or average words per page is < 5, surfacing an honest disclaimer that OCR is required but unsupported in MVP.
+  5. Strictly isolate PDF extraction: zero document contents are sent to external LLMs during Phase 3 upload or text extraction.
+- **Consequences:**
+  - Robust, zero-native-dependency PDF extraction on Windows and Linux.
+  - Page numbers (1-indexed) are strictly retained for analytical evidence citations.
+  - Clear user transparency when an uploaded document requires OCR.

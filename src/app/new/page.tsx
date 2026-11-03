@@ -12,6 +12,8 @@ import {
   Layers,
   AlertCircle,
   Key,
+  CheckCircle,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,7 +31,9 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { ResearchReport } from "@/types/research";
+import { ExtractedDocument } from "@/types/document";
 import { ReportViewer } from "@/features/research/components/report-viewer";
+import { DocumentViewer } from "@/features/pdf-analysis/components/document-viewer";
 
 type Mode = "topic" | "document";
 
@@ -43,16 +47,25 @@ export default function NewResearchPage() {
   const initialMode = searchParams.get("mode") === "document" ? "document" : "topic";
   const [activeMode, setActiveMode] = React.useState<Mode>(initialMode);
 
-  // Form input state
+  // Form input state (Topic Analysis)
   const [topic, setTopic] = React.useState("");
   const [scope, setScope] = React.useState("");
   const [validationError, setValidationError] = React.useState<string | null>(null);
 
-  // Async submission state
+  // Async submission state (Topic Analysis)
   const [isLoading, setIsLoading] = React.useState(false);
   const [loadingStep, setLoadingStep] = React.useState("Initiating inquiry...");
   const [apiError, setApiError] = React.useState<ApiErrorPayload | null>(null);
   const [report, setReport] = React.useState<ResearchReport | null>(null);
+
+  // PDF Document Upload & Extraction State
+  const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
+  const [isDragOver, setIsDragOver] = React.useState(false);
+  const [isUploading, setIsUploading] = React.useState(false);
+  const [uploadStep, setUploadStep] = React.useState("Validating document headers...");
+  const [uploadError, setUploadError] = React.useState<ApiErrorPayload | null>(null);
+  const [extractedDoc, setExtractedDoc] = React.useState<ExtractedDocument | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
 
   const handleTopicSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -114,17 +127,122 @@ export default function NewResearchPage() {
     }
   };
 
-  const handleReset = () => {
+  const handleFileSelect = (file: File) => {
+    setUploadError(null);
+    if (!file.name.toLowerCase().endsWith(".pdf")) {
+      setUploadError({
+        code: "INVALID_EXTENSION",
+        message: "Only PDF documents (.pdf) are supported.",
+      });
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      setUploadError({
+        code: "PAYLOAD_TOO_LARGE",
+        message: "File exceeds the 10 MB maximum upload limit.",
+      });
+      return;
+    }
+
+    setSelectedFile(file);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragOver(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const file = e.dataTransfer.files[0];
+      handleFileSelect(file);
+    }
+  };
+
+  const handleUploadSubmit = async () => {
+    if (!selectedFile) {
+      setUploadError({
+        code: "NO_FILE",
+        message: "Please choose or drag a PDF file to upload.",
+      });
+      return;
+    }
+
+    setUploadError(null);
+    setIsUploading(true);
+    setUploadStep("Validating file signature & headers...");
+
+    const timer1 = setTimeout(() => {
+      setUploadStep("Parsing page boundaries & text streams...");
+    }, 800);
+
+    const timer2 = setTimeout(() => {
+      setUploadStep("Indexing extracted passages into memory store...");
+    }, 1800);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+
+      const res = await fetch("/api/documents/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+
+      const result = await res.json();
+
+      if (!res.ok || !result.success) {
+        setUploadError({
+          code: result?.error?.code || "UPLOAD_FAILED",
+          message: result?.error?.message || "Failed to process and extract PDF text.",
+        });
+        setIsUploading(false);
+        return;
+      }
+
+      setExtractedDoc(result.data as ExtractedDocument);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Network error during upload.";
+      setUploadError({
+        code: "NETWORK_ERROR",
+        message: msg,
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleResetTopic = () => {
     setReport(null);
     setApiError(null);
     setValidationError(null);
   };
 
-  // If report is generated, render the complete structured report
+  const handleResetDoc = () => {
+    setExtractedDoc(null);
+    setSelectedFile(null);
+    setUploadError(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  // If topic report is generated, render ReportViewer
   if (report) {
     return (
       <div className="max-w-4xl mx-auto space-y-6">
-        <ReportViewer report={report} onReset={handleReset} />
+        <ReportViewer report={report} onReset={handleResetTopic} />
+      </div>
+    );
+  }
+
+  // If document extraction is complete, render DocumentViewer
+  if (extractedDoc) {
+    return (
+      <div className="max-w-4xl mx-auto space-y-6">
+        <DocumentViewer document={extractedDoc} onReset={handleResetDoc} />
       </div>
     );
   }
@@ -168,8 +286,7 @@ export default function NewResearchPage() {
           type="button"
           onClick={() => {
             setActiveMode("document");
-            setValidationError(null);
-            setApiError(null);
+            setUploadError(null);
           }}
           className={cn(
             "flex items-center gap-2 border-b-2 px-5 py-3 text-sm font-medium transition-colors cursor-pointer",
@@ -351,36 +468,147 @@ export default function NewResearchPage() {
         </div>
       )}
 
-      {/* Tab 2: PDF Document Upload (Phase 3 preview) */}
+      {/* Tab 2: PDF Document Upload & Text Extraction (Phase 3 Active) */}
       {activeMode === "document" && (
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base font-semibold">
-                Upload Academic Document (PDF)
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base font-semibold">
+                  Upload Academic Document (PDF)
+                </CardTitle>
+                <Badge variant="outline" className="text-[10px] font-mono">
+                  Phase 3 Extraction Engine
+                </Badge>
+              </div>
               <CardDescription className="text-xs">
-                Extract page-partitioned text and generate evidence-grounded reports with exact citations.
+                Extract digital text page by page with exact boundary tracking, integrity verification, and scanned document detection.
               </CardDescription>
             </CardHeader>
+
             <CardContent className="space-y-4">
-              <div className="flex flex-col items-center justify-center border-2 border-dashed border-border hover:border-primary/50 rounded-xl p-8 sm:p-12 text-center bg-card transition-colors cursor-pointer group">
-                <div className="h-12 w-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
-                  <FileUp className="h-6 w-6" />
+              {/* Hidden Native File Input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,application/pdf"
+                className="hidden"
+                onChange={(e) => {
+                  if (e.target.files && e.target.files.length > 0) {
+                    handleFileSelect(e.target.files[0]);
+                  }
+                }}
+              />
+
+              {/* Drag and Drop Zone */}
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setIsDragOver(true);
+                }}
+                onDragLeave={() => setIsDragOver(false)}
+                onDrop={handleDrop}
+                onClick={() => fileInputRef.current?.click()}
+                className={cn(
+                  "flex flex-col items-center justify-center border-2 border-dashed rounded-xl p-8 sm:p-12 text-center transition-all cursor-pointer group",
+                  isDragOver
+                    ? "border-primary bg-primary/5 scale-[1.01]"
+                    : "border-border hover:border-primary/50 bg-card hover:bg-muted/10",
+                  selectedFile ? "border-emerald-500/50 bg-emerald-50/10 dark:bg-emerald-950/10" : ""
+                )}
+              >
+                <div
+                  className={cn(
+                    "h-12 w-12 rounded-full flex items-center justify-center mb-4 transition-transform group-hover:scale-105",
+                    selectedFile
+                      ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300"
+                      : "bg-primary/10 text-primary"
+                  )}
+                >
+                  {selectedFile ? <CheckCircle className="h-6 w-6" /> : <FileUp className="h-6 w-6" />}
                 </div>
-                <h4 className="text-sm font-semibold text-foreground">
-                  Select a research paper (PDF) to analyze
-                </h4>
-                <p className="text-xs text-muted-foreground mt-1 max-w-sm">
-                  Drag and drop a PDF file here or click to browse. Max file size: 10 MB.
-                </p>
-                <div className="mt-4 flex items-center gap-2">
-                  <Button variant="outline" size="sm" className="text-xs pointer-events-none">
-                    Select File
-                  </Button>
-                </div>
+
+                {selectedFile ? (
+                  <div className="space-y-2 max-w-md">
+                    <div className="inline-flex items-center gap-2 bg-card border border-border px-3 py-1.5 rounded-md text-xs font-mono text-foreground shadow-xs">
+                      <FileText className="h-4 w-4 text-primary shrink-0" />
+                      <span className="truncate max-w-[240px] font-semibold">{selectedFile.name}</span>
+                      <span className="text-muted-foreground text-[11px]">
+                        ({(selectedFile.size / 1024).toFixed(1)} KB)
+                      </span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedFile(null);
+                          if (fileInputRef.current) fileInputRef.current.value = "";
+                        }}
+                        className="ml-1 text-muted-foreground hover:text-foreground p-0.5 rounded"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                        <span className="sr-only">Remove file</span>
+                      </button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Click or drop another file to replace, or click <strong>Extract Text</strong> below.
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <h4 className="text-sm font-semibold text-foreground">
+                      Select a research paper (PDF) to analyze
+                    </h4>
+                    <p className="text-xs text-muted-foreground mt-1 max-w-sm">
+                      Drag and drop a PDF file here or click to browse. Max file size: 10 MB.
+                    </p>
+                    <div className="mt-4 flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="text-xs pointer-events-none"
+                      >
+                        Select PDF File
+                      </Button>
+                    </div>
+                  </>
+                )}
               </div>
 
+              {/* Error Alert */}
+              {uploadError && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle className="text-xs font-bold">
+                    {uploadError.code === "PAYLOAD_TOO_LARGE"
+                      ? "File Too Large"
+                      : uploadError.code === "INVALID_FILE_SIGNATURE"
+                      ? "Invalid PDF Signature"
+                      : uploadError.code === "ENCRYPTED_PDF"
+                      ? "Encrypted PDF Unsupported"
+                      : "Upload & Extraction Failed"}
+                  </AlertTitle>
+                  <AlertDescription className="text-xs leading-relaxed mt-1">
+                    {uploadError.message}
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {/* Progress Feedback */}
+              {isUploading && (
+                <div className="rounded-lg border border-border bg-card p-4 space-y-3">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-primary">
+                    <span className="h-2 w-2 rounded-full bg-primary animate-ping" />
+                    <span>{uploadStep}</span>
+                  </div>
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-4 w-1/2" />
+                  </div>
+                </div>
+              )}
+
+              {/* Guarantees & Technical Details */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                 <div className="rounded-lg border border-border p-3 text-xs space-y-1">
                   <div className="font-semibold text-foreground flex items-center gap-1.5">
@@ -388,27 +616,34 @@ export default function NewResearchPage() {
                     <span>Page Boundary Mapping</span>
                   </div>
                   <p className="text-muted-foreground text-[11px] leading-relaxed">
-                    Extracted text preserves page numbers so analytical citations link directly to specific passages.
+                    Text is extracted page-by-page to prepare exact citations (Page 1, Page 2...) for grounded reports in Phase 4.
                   </p>
                 </div>
 
                 <div className="rounded-lg border border-border p-3 text-xs space-y-1">
                   <div className="font-semibold text-foreground flex items-center gap-1.5">
                     <ShieldAlert className="h-3.5 w-3.5 text-amber-600" />
-                    <span>Scanned PDF Disclaimer</span>
+                    <span>Scanned Document Integrity</span>
                   </div>
                   <p className="text-muted-foreground text-[11px] leading-relaxed">
-                    Optical Character Recognition (OCR) is not included in MVP. Image-only PDFs will be flagged honestly.
+                    Image-only PDFs are automatically identified. When digital text is absent, OCR requirements are clearly flagged.
                   </p>
                 </div>
               </div>
             </CardContent>
+
             <CardFooter className="flex justify-between border-t border-border pt-4">
               <span className="text-xs text-muted-foreground">
-                Document Parsing Engine: Phase 3
+                Processing: <strong className="text-foreground">Server-Side unpdf (Zero LLM calls)</strong>
               </span>
-              <Button disabled className="gap-2 text-xs">
-                <span>Upload & Extract</span>
+              <Button
+                type="button"
+                onClick={handleUploadSubmit}
+                isLoading={isUploading}
+                disabled={isUploading || !selectedFile}
+                className="gap-2 text-xs"
+              >
+                <span>Extract Text</span>
                 <ArrowRight className="h-3.5 w-3.5" />
               </Button>
             </CardFooter>

@@ -42,4 +42,23 @@ describe("Secret Isolation & Security Audit", () => {
     scanDir(componentsDir);
     scanDir(featuresDir);
   });
+
+  it("ensures Phase 3 PDF extraction never imports or sends data to OpenAI", () => {
+    const pdfDir = path.resolve(__dirname, "../../src/lib/pdf");
+    const uploadRoutePath = path.resolve(__dirname, "../../src/app/api/documents/upload/route.ts");
+
+    const uploadRouteContent = fs.readFileSync(uploadRoutePath, "utf-8");
+    expect(uploadRouteContent).not.toContain("openai");
+    expect(uploadRouteContent).not.toContain("getAIProvider");
+
+    const pdfFiles = fs.readdirSync(pdfDir);
+    for (const file of pdfFiles) {
+      const fullPath = path.join(pdfDir, file);
+      if (fs.statSync(fullPath).isFile() && file.endsWith(".ts")) {
+        const content = fs.readFileSync(fullPath, "utf-8");
+        expect(content).not.toContain("openai");
+        expect(content).not.toContain("getAIProvider");
+      }
+    }
+  });
 });
