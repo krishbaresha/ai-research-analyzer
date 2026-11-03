@@ -9,8 +9,8 @@ export async function GET() {
     data: {
       status: "healthy",
       phase: 2,
-      provider: "openai",
-      openAIConfigured: config.hasOpenAIKey,
+      provider: "groq",
+      groqConfigured: config.hasGroqKey,
       configuredModel: config.model,
       maxUploadBytes: config.maxUploadSizeBytes,
       runtime: "nodejs",

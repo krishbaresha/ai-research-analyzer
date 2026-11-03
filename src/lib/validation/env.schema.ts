@@ -5,8 +5,8 @@ import { z } from "zod";
  * All variables here are validated on the server.
  */
 export const serverEnvSchema = z.object({
-  OPENAI_API_KEY: z.string().min(1, "OPENAI_API_KEY is required on the server").optional(),
-  OPENAI_MODEL: z.string().default("gpt-4o-mini"),
+  GROQ_API_KEY: z.string().min(1, "GROQ_API_KEY is required on the server").optional(),
+  GROQ_MODEL: z.string().default("llama-3.3-70b-versatile"),
   MAX_UPLOAD_SIZE_BYTES: z
     .string()
     .transform((val) => parseInt(val, 10))
@@ -32,8 +32,8 @@ export function getServerConfig() {
   const parsed = result.success ? result.data : serverEnvSchema.parse({});
 
   return {
-    hasOpenAIKey: Boolean(process.env.OPENAI_API_KEY),
-    model: parsed.OPENAI_MODEL,
+    hasGroqKey: Boolean(process.env.GROQ_API_KEY),
+    model: parsed.GROQ_MODEL,
     maxUploadSizeBytes: parsed.MAX_UPLOAD_SIZE_BYTES,
     nodeEnv: parsed.NODE_ENV,
   };

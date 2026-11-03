@@ -68,16 +68,16 @@ export default function NewResearchPage() {
     setValidationError(null);
     setApiError(null);
     setIsLoading(true);
-    setLoadingStep("Connecting to OpenAI Responses API...");
+    setLoadingStep("Connecting to Groq LPU inference engine...");
 
     try {
       const timer1 = setTimeout(() => {
         setLoadingStep("Structuring academic analysis & evidence bounds...");
-      }, 1500);
+      }, 1200);
 
       const timer2 = setTimeout(() => {
         setLoadingStep("Validating structured report contract...");
-      }, 3500);
+      }, 3000);
 
       const res = await fetch("/api/research/analyze-topic", {
         method: "POST",
@@ -228,7 +228,7 @@ export default function NewResearchPage() {
                       variant={
                         apiError.code === "AI_AUTH_ERROR"
                           ? "warning"
-                          : apiError.code === "AI_QUOTA_EXCEEDED"
+                          : apiError.code === "AI_RATE_LIMIT"
                           ? "destructive"
                           : "default"
                       }
@@ -236,9 +236,9 @@ export default function NewResearchPage() {
                       <AlertCircle className="h-4 w-4" />
                       <AlertTitle className="text-xs font-bold">
                         {apiError.code === "AI_AUTH_ERROR"
-                          ? "OpenAI API Key Required"
-                          : apiError.code === "AI_QUOTA_EXCEEDED"
-                          ? "OpenAI Quota Exceeded"
+                          ? "Groq API Key Required"
+                          : apiError.code === "AI_RATE_LIMIT"
+                          ? "Groq Rate Limit Exceeded"
                           : "Inference Error"}
                       </AlertTitle>
                       <AlertDescription className="text-xs leading-relaxed space-y-1 mt-1">
@@ -247,7 +247,7 @@ export default function NewResearchPage() {
                           <div className="mt-2 rounded bg-background/80 p-2 font-mono text-[11px] text-foreground border border-border">
                             Add to <code>.env.local</code>:
                             <br />
-                            <code>OPENAI_API_KEY=your_key_here</code>
+                            <code>GROQ_API_KEY=your_groq_api_key_here</code>
                           </div>
                         )}
                       </AlertDescription>
@@ -270,7 +270,7 @@ export default function NewResearchPage() {
                 </CardContent>
                 <CardFooter className="flex justify-between border-t border-border pt-4">
                   <span className="text-xs text-muted-foreground">
-                    Provider: <strong className="text-foreground">OpenAI Responses API</strong>
+                    Inference: <strong className="text-foreground">Server-Side Groq API</strong>
                   </span>
                   <Button
                     type="submit"
@@ -301,19 +301,19 @@ export default function NewResearchPage() {
               <CardContent className="space-y-2 text-xs text-muted-foreground">
                 <div className="flex items-center gap-2 p-1.5 rounded bg-muted/50">
                   <span className="font-semibold text-foreground">1.</span>
-                  <span>Executive Summary & Assumptions</span>
+                  <span>Research Overview & Executive Summary</span>
                 </div>
                 <div className="flex items-center gap-2 p-1.5 rounded bg-muted/50">
                   <span className="font-semibold text-foreground">2.</span>
-                  <span>Methodology & Key Findings</span>
+                  <span>Key Findings & Evidence Attribution</span>
                 </div>
                 <div className="flex items-center gap-2 p-1.5 rounded bg-muted/50">
                   <span className="font-semibold text-foreground">3.</span>
-                  <span>Critical Strengths & Limitations</span>
+                  <span>Methodology & Detailed Analysis</span>
                 </div>
                 <div className="flex items-center gap-2 p-1.5 rounded bg-muted/50">
                   <span className="font-semibold text-foreground">4.</span>
-                  <span>Research Gaps & Follow-ups</span>
+                  <span>Limitations, Gaps & Further Research</span>
                 </div>
               </CardContent>
             </Card>
@@ -326,11 +326,11 @@ export default function NewResearchPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="text-xs text-muted-foreground leading-relaxed">
-                Claims without direct document backing will be explicitly tagged as{" "}
+                Claims are explicitly labelled as{" "}
                 <Badge variant="ai_interpretation" className="text-[10px] my-1">
                   ai_interpretation
                 </Badge>{" "}
-                to prevent unverified assertions from masquerading as verified facts.
+                to make clear that topic analysis is model-generated background analysis, not live web research or verified empirical findings.
               </CardContent>
             </Card>
 
@@ -342,7 +342,7 @@ export default function NewResearchPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="text-xs text-muted-foreground leading-relaxed">
-                OpenAI API keys remain strictly on the server. No secrets are ever sent to or loaded by browser components.
+                Groq API keys remain strictly on the server. No secrets are ever exposed to client bundles or browser responses.
               </CardContent>
             </Card>
           </div>

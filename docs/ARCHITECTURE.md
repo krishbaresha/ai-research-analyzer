@@ -1,7 +1,7 @@
 # AI Research Analyzer — System Architecture
 
 > **Document Status:** Active / Authoritative  
-> **Last Updated:** 2026-11-03 (Updated for OpenAI Responses API Migration)  
+> **Last Updated:** 2026-11-03 (Phase 2: Groq Integration & Provider Abstraction)  
 > **Target Framework:** Next.js 15 (App Router) + TypeScript + Tailwind CSS
 
 ---
@@ -9,15 +9,15 @@
 ## 1. Architectural Principles
 
 1. **Separation of Concerns:** Strict layer isolation between presentation (`src/app`, `src/components`), domain features (`src/features/*`), infrastructure/services (`src/lib/*`), and shared types/contracts (`src/types/*`).
-2. **Server-Side AI Confidentiality:** All interactions with LLM APIs reside solely on the server. No client component or browser bundle shall ever import or receive `OPENAI_API_KEY`.
-3. **Modular AI Provider Abstraction:** Inference services implement an abstract `AIProvider` interface (`src/lib/ai/provider.ts`), decoupling the application from specific AI vendors. OpenAI Responses API (`client.responses.create()`) is the primary provider, with pluggable support for future providers.
+2. **Server-Side AI Confidentiality:** All interactions with AI APIs reside solely on the server. No client component or browser bundle shall ever import or receive `GROQ_API_KEY`.
+3. **Modular AI Provider Abstraction:** Inference services implement an abstract `AIProvider` interface (`src/lib/ai/provider.ts`), decoupling domain logic from specific model providers. The official **Groq SDK** (`groq-sdk`) powers server-side LPU inference, while `OpenAIProvider` remains available as an alternative.
 4. **Evidence-Grounded Reporting & Zero Hallucination:** Claims produced by the model must be explicitly categorized:
    - `from_document`: Grounded with extracted text and page numbers.
    - `retrieved_source`: Backed by an external source.
    - `ai_interpretation`: Analytical extrapolation by the model.
    - `not_established`: Stating explicitly when evidence is missing.
-5. **Untrusted Data Boundary:** Uploaded PDFs, web content, and user topics are treated strictly as untrusted data inputs. They are fed into model prompts with explicit XML isolation delimiters and defensive system prompting to prevent prompt injection.
-6. **Progressive Resilience:** Failures in external LLM calls, quota limits, rate limits, or malformed outputs are caught by standardized domain errors (`AIAuthError`, `AIRateLimitError`, `AIQuotaExceededError`, `AITimeoutError`, `AIResponseParseError`) and returned as actionable envelopes.
+5. **Untrusted Data Boundary:** Uploaded PDFs, web content, and user topics are treated strictly as untrusted data inputs. They are fed into model prompts with explicit XML isolation delimiters (`<user_topic>`, `<scope_constraints>`) and defensive system prompting to prevent prompt injection.
+6. **Progressive Resilience:** Failures in external LLM calls, rate limits, or malformed outputs are caught by standardized domain errors (`AIAuthError`, `AIRateLimitError`, `AITimeoutError`, `AIResponseParseError`) and returned as actionable envelopes.
 
 ---
 
@@ -50,6 +50,7 @@
 [ Core Services & Processing Engine ]
    - src/lib/ai/
        ├── provider.ts           (Abstract AIProvider interface & domain error classes)
+       ├── groq.provider.ts      (Official Groq SDK groq.chat.completions.create wrapper)
        ├── openai.provider.ts    (OpenAI Responses API client.responses.create wrapper)
        ├── prompts.ts            (Defensive prompt templates, XML boundaries, schema instructions)
        ├── parsers.ts            (Markdown fence sanitization & Zod schema validation)
@@ -69,7 +70,7 @@
 [ Shared Validation, Types & Utils ]
    - src/lib/validation/         (Zod schemas for inputs, outputs, env)
    - src/types/                  (Domain types, report contracts, API types)
-   - src/lib/utils/              (Formatting, styling helpers, cn utility)
+   - src/lib/utils.ts            (Formatting, styling helpers, cn utility)
 ```
 
 ---
@@ -123,12 +124,13 @@ e:\Research Analyzer\
 │   ├── lib/                            # Infrastructure, core services & utilities
 │   │   ├── ai/                         # Server-side LLM inference
 │   │   │   ├── provider.ts             # AIProvider contract & domain error classes
-│   │   │   ├── openai.provider.ts      # OpenAI Responses API client implementation
+│   │   │   ├── groq.provider.ts        # Official Groq SDK provider implementation
+│   │   │   ├── openai.provider.ts      # OpenAI Responses API provider implementation
 │   │   │   ├── prompts.ts              # Defensive prompts with evidence isolation
 │   │   │   ├── parsers.ts              # Schema-validated JSON response parser
 │   │   │   └── index.ts                # Provider factory singleton
 │   │   ├── validation/                 # Shared validation schemas (Zod)
-│   │   │   ├── env.schema.ts           # OPENAI_API_KEY, OPENAI_MODEL validation
+│   │   │   ├── env.schema.ts           # GROQ_API_KEY, GROQ_MODEL validation
 │   │   │   └── research.schema.ts      # Topic request & report Zod contracts
 │   │   └── utils.ts                    # General utilities (cn, formatBytes, formatDate)
 │   │
@@ -142,11 +144,13 @@ e:\Research Analyzer\
 │   ├── unit/                           # Pure function tests (parsers, prompts)
 │   │   ├── parsers.test.ts
 │   │   └── prompts.test.ts
-│   ├── integration/                    # Service-level integration tests (OpenAI provider)
+│   ├── integration/                    # Service-level integration tests (Groq, OpenAI)
+│   │   ├── groq-provider.test.ts
 │   │   └── openai-provider.test.ts
 │   ├── security/                       # Secret boundary & isolation tests
 │   │   └── secret-isolation.test.ts
 │   └── fixtures/                       # Test assets (mock reports, sample payloads)
+│       ├── mock-groq-report.json
 │       └── mock-openai-report.json
 │
 ├── public/                             # Static public assets
@@ -165,13 +169,13 @@ e:\Research Analyzer\
 - Client components MUST NEVER import from `src/lib/ai/` or any module holding server secrets.
 - Import order:
   1. Standard library / React / Next.js
-  2. Third-party packages (openai, lucide-react, zod)
+  2. Third-party packages (groq-sdk, openai, lucide-react, zod)
   3. Internal aliases (`@/components/*`, `@/lib/*`, `@/features/*`, `@/types/*`)
   4. Relative imports (`./...`)
 
 ### 4.2 Security Architecture
 1. **Environment Variable Hygiene:**
-   - Server-only secrets (`OPENAI_API_KEY`) must never be prefixed with `NEXT_PUBLIC_`.
+   - Server-only secrets (`GROQ_API_KEY`) must never be prefixed with `NEXT_PUBLIC_`.
    - Access to secrets is centralized in `src/lib/validation/env.schema.ts`.
 2. **Defensive Prompt Engineering:**
    - User inputs are enclosed in explicit structural tags (`<user_topic>`, `<scope_constraints>`).

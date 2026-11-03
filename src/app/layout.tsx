@@ -12,8 +12,8 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "AI Research Analyzer",
   description:
-    "Evidence-grounded academic research analyzer with server-side OpenAI Responses API inference and traceable document citations.",
-  keywords: ["research", "academic", "analysis", "openai", "pdf", "citations"],
+    "Evidence-grounded academic research analyzer with server-side Groq API inference and traceable document citations.",
+  keywords: ["research", "academic", "analysis", "groq", "pdf", "citations"],
 };
 
 export const viewport: Viewport = {

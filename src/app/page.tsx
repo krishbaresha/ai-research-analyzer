@@ -63,16 +63,16 @@ export default function DashboardPage() {
               <span>Inference Engine</span>
               <Badge variant="outline" className="text-[10px] font-mono">Server-Side</Badge>
             </CardDescription>
-            <CardTitle className="text-base font-semibold">OpenAI Responses API</CardTitle>
+            <CardTitle className="text-base font-semibold">Groq API Architecture</CardTitle>
           </CardHeader>
           <CardContent className="space-y-1.5 text-xs text-muted-foreground">
             <div className="flex justify-between py-1 border-b border-border/50">
-              <span>Default Model</span>
-              <span className="font-mono font-medium text-foreground">gpt-4o-mini</span>
+              <span>Primary Engine</span>
+              <span className="font-mono font-medium text-foreground">Official Groq SDK</span>
             </div>
             <div className="flex justify-between py-1 border-b border-border/50">
               <span>Configurable Key</span>
-              <span className="font-mono font-medium text-foreground">OPENAI_MODEL</span>
+              <span className="font-mono font-medium text-foreground">GROQ_MODEL</span>
             </div>
             <div className="flex justify-between py-1">
               <span>Key Confidentiality</span>
@@ -189,8 +189,8 @@ export default function DashboardPage() {
         <Info className="h-4 w-4" />
         <AlertTitle>Phase 2 Topic Analysis Active</AlertTitle>
         <AlertDescription className="text-xs leading-relaxed">
-          Server-side OpenAI Responses API integration is active with modular provider architecture.
-          Submit any academic topic in the New Research workspace to generate a structured, verifiable report.
+          Server-side Groq integration is active with modular provider architecture.
+          Submit any academic inquiry in the New Research workspace to generate a structured, verifiable report.
         </AlertDescription>
       </Alert>
     </div>

@@ -18,7 +18,7 @@ All API routes return responses conforming to the standard JSON envelope:
   "metadata": {
     "timestamp": "2026-11-03T11:00:00Z",
     "processingTimeMs": 1420,
-    "model": "gpt-4o-mini"
+    "model": "llama-3.3-70b-versatile"
   }
 }
 ```
@@ -43,9 +43,8 @@ All API routes return responses conforming to the standard JSON envelope:
 ### Standard Error Codes
 - `BAD_REQUEST` (400) - Missing or malformed JSON payload.
 - `VALIDATION_ERROR` (422) - Input failed Zod validation schema.
-- `AI_AUTH_ERROR` (401/500) - Server missing or invalid `OPENAI_API_KEY`.
-- `AI_RATE_LIMIT` (429) - OpenAI rate limit reached; retry after backoff.
-- `AI_QUOTA_EXCEEDED` (402) - Account credit exhaustion or quota limit.
+- `AI_AUTH_ERROR` (401/500) - Server missing or invalid `GROQ_API_KEY`.
+- `AI_RATE_LIMIT` (429) - Groq rate limit reached; retry after backoff.
 - `AI_TIMEOUT` (504) - Inference request exceeded timeout window.
 - `AI_MALFORMED_OUTPUT` (502) - Model generated invalid JSON failing schema validation.
 - `PAYLOAD_TOO_LARGE` (413) - Upload exceeds maximum upload size (10MB).
@@ -59,9 +58,9 @@ All API routes return responses conforming to the standard JSON envelope:
 ### 2.1 Research Topic Analysis
 
 #### `POST /api/research/analyze-topic`
-Submits a user-provided research topic or question for structured server-side analysis via OpenAI Responses API (`client.responses.create`).
+Submits a user-provided research topic or question for structured server-side analysis via Groq LPU inference (`groq.chat.completions.create`).
 
-- **Authentication:** Public / Optional User Session (Key managed on server)
+- **Authentication:** Public / Optional User Session (Key managed strictly on server)
 - **Content-Type:** `application/json`
 
 **Request Body:**
@@ -108,13 +107,13 @@ Submits a user-provided research topic or question for structured server-side an
       "How do graph-based RAG architectures compare to dense vector retrieval in hierarchical document synthesis?"
     ],
     "evidenceStatus": "ai_interpretation",
-    "modelId": "gpt-4o-mini",
+    "modelId": "llama-3.3-70b-versatile",
     "createdAt": "2026-11-03T11:00:00.000Z"
   },
   "metadata": {
     "timestamp": "2026-11-03T11:00:00.000Z",
-    "processingTimeMs": 2340,
-    "model": "gpt-4o-mini"
+    "processingTimeMs": 1340,
+    "model": "llama-3.3-70b-versatile"
   }
 }
 ```
@@ -124,7 +123,7 @@ Submits a user-provided research topic or question for structured server-side an
 ### 2.2 Health & Status
 
 #### `GET /api/health`
-Checks server health and validates OpenAI configuration status without exposing API key secrets.
+Checks server health and validates Groq configuration status without exposing API key secrets.
 
 **Response (`200 OK`):**
 ```json
@@ -133,9 +132,9 @@ Checks server health and validates OpenAI configuration status without exposing 
   "data": {
     "status": "healthy",
     "phase": 2,
-    "provider": "openai",
-    "openAIConfigured": true,
-    "configuredModel": "gpt-4o-mini",
+    "provider": "groq",
+    "groqConfigured": true,
+    "configuredModel": "llama-3.3-70b-versatile",
     "maxUploadBytes": 10485760,
     "runtime": "nodejs",
     "timestamp": "2026-11-03T11:00:00.000Z"

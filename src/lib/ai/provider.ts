@@ -16,14 +16,14 @@ export class AIServiceError extends Error {
 }
 
 export class AIAuthError extends AIServiceError {
-  constructor(message = "OpenAI API key is missing or invalid on the server.") {
+  constructor(message = "Groq API key is missing or invalid on the server. Please add your GROQ_API_KEY to .env.local.") {
     super(message, "AI_AUTH_ERROR", 401);
     this.name = "AIAuthError";
   }
 }
 
 export class AIRateLimitError extends AIServiceError {
-  constructor(message = "Rate limit exceeded. Please retry after a brief pause.") {
+  constructor(message = "Groq API rate limit reached. Please retry after a brief pause.") {
     super(message, "AI_RATE_LIMIT", 429);
     this.name = "AIRateLimitError";
   }
@@ -31,7 +31,7 @@ export class AIRateLimitError extends AIServiceError {
 
 export class AIQuotaExceededError extends AIServiceError {
   constructor(
-    message = "Your OpenAI account has insufficient credits or exceeded its quota. Please check your billing settings."
+    message = "Your inference account has insufficient credits or exceeded its quota."
   ) {
     super(message, "AI_QUOTA_EXCEEDED", 402);
     this.name = "AIQuotaExceededError";
@@ -39,7 +39,7 @@ export class AIQuotaExceededError extends AIServiceError {
 }
 
 export class AITimeoutError extends AIServiceError {
-  constructor(message = "Inference request timed out. Please retry.") {
+  constructor(message = "Inference request to Groq timed out. Please retry.") {
     super(message, "AI_TIMEOUT", 504);
     this.name = "AITimeoutError";
   }
@@ -70,7 +70,6 @@ export interface AIProviderResult<T> {
 
 /**
  * Modular AI Provider interface.
- * Decouples business logic from specific model providers (OpenAI, Anthropic, etc.).
  */
 export interface AIProvider {
   readonly name: string;
