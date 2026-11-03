@@ -209,7 +209,7 @@
 ## ADR-012: Expanded Phase 5 Scope — Multi-Source Scholarly Paper Import, SSRF Defense Architecture, and In-Memory Research Library Foundation
 
 - **Date:** 2026-11-03
-- **Status:** Accepted (Planning Phase 5)
+- **Status:** Accepted (Phase 5 Completed)
 - **Context:**
   While Phase 3 and Phase 4 established local PDF uploads and grounded analysis, academic researchers acquire papers through multiple channels: direct preprint URLs, arXiv IDs, and DOIs. Additionally, users need a central catalog (Research Library) to browse and manage ingested literature rather than losing track of papers. Fetching arbitrary remote content introduces Server-Side Request Forgery (SSRF) vulnerabilities (e.g., reaching internal cloud metadata endpoints `169.254.169.254` or private VPC subnets).
 - **Decision:**

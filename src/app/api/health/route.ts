@@ -14,6 +14,13 @@ export async function GET() {
       configuredModel: config.model,
       maxUploadBytes: config.maxUploadSizeBytes,
       runtime: "nodejs",
+      capabilities: {
+        documentChat: true,
+        passageRetrieval: "bm25",
+        paperImportSources: ["upload", "direct_url", "arxiv", "doi"],
+        metadataProviders: ["crossref", "openalex", "arxiv", "semanticscholar"],
+        ssrfProtection: true,
+      },
       timestamp: new Date().toISOString(),
     },
   });

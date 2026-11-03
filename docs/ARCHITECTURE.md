@@ -68,9 +68,15 @@
        ├── prompts.ts            (Defensive prompt templates, XML boundaries, schema instructions)
        ├── parsers.ts            (Markdown fence sanitization & Zod schema validation)
        └── index.ts              (Provider factory: getAIProvider())
-   - src/lib/security/ (Planned Phase 5)
+   - src/lib/security/
        └── ssrf.ts               (SSRF validation, IP blocklists, DNS resolution checks)
-   - src/lib/events/ (Planned Phase 5/10)
+   - src/lib/import/
+       ├── fetcher.ts            (SSRF-hardened remote PDF stream downloader)
+       ├── source-resolver.ts    (Multi-source URL/arXiv/DOI detector & dispatcher)
+       └── providers/            (Crossref, OpenAlex, arXiv, Semantic Scholar adapters)
+   - src/lib/pipeline/
+       └── document-processor.ts (Smart processing pipeline, classification, hash, events)
+   - src/lib/events/
        └── event-bus.ts          (Synchronous in-memory event dispatcher for research automations)
         │
         ▼
@@ -233,12 +239,12 @@ e:\Research Analyzer\
 
 ## 8. Long-Term 10-Phase Roadmap
 
-1. **Phase 1: Foundation, App Shell & Design System (Done)** — Next.js 15, Swiss Modernism 2.0.
-2. **Phase 2: Server-Side OpenAI Integration & Topic Research (Done)** — OpenAI Responses API, topic reports.
-3. **Phase 3: PDF Upload & Reliable Text Extraction (Done)** — `unpdf` page extraction, scanned PDF detection.
-4. **Phase 4: PDF Analysis & Evidence-Grounded Reports (Done)** — 12-section reports, context budgeting, citations.
-5. **Phase 5: Document Chat + Scholarly Paper Import + Research Library Foundation (Next)** — Grounded Q&A, URL/arXiv/DOI import, SSRF defense, library foundation, event bus.
-6. **Phase 6: Persistence, Projects & Research History (Planned)** — PostgreSQL/Supabase database integration.
+1. **Phase 1: Foundation, App Shell & Design System (COMPLETED)** — Next.js 15, Swiss Modernism 2.0.
+2. **Phase 2: Server-Side OpenAI Integration & Topic Research (COMPLETED)** — OpenAI Responses API, topic reports.
+3. **Phase 3: PDF Upload & Reliable Text Extraction (COMPLETED)** — `unpdf` page extraction, scanned PDF detection.
+4. **Phase 4: PDF Analysis & Evidence-Grounded Reports (COMPLETED)** — 12-section reports, context budgeting, citations.
+5. **Phase 5: Document Chat + Scholarly Paper Import + Research Library Foundation (COMPLETED)** — Grounded Q&A, URL/arXiv/DOI import, SSRF defense suite, in-memory Research Library, and event bus foundation.
+6. **Phase 6: Persistence, Projects & Research History (Next)** — PostgreSQL/Supabase database integration.
 7. **Phase 7: Multi-Document Synthesis & Literature Reviews (Planned)** — Cross-paper comparative analysis, matrices.
 8. **Phase 8: Web Research & Live Academic Source Discovery (Planned)** — Controlled academic search & preprint discovery.
 9. **Phase 9: Export, Polish & Production Readiness (Planned)** — PDF/BibTeX export, WCAG AA compliance.

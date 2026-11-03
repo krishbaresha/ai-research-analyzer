@@ -48,7 +48,13 @@ export default function DashboardPage() {
           <Link href="/new?mode=document">
             <Button variant="outline" className="gap-2">
               <FileUp className="h-4 w-4" />
-              <span>Upload Research PDF</span>
+              <span>Import / Upload Paper</span>
+            </Button>
+          </Link>
+          <Link href="/documents">
+            <Button variant="ghost" className="gap-2">
+              <FileSearch className="h-4 w-4" />
+              <span>Research Library</span>
             </Button>
           </Link>
         </div>
@@ -186,10 +192,9 @@ export default function DashboardPage() {
       {/* Architectural Guidelines Note */}
       <Alert variant="info" className="border-border">
         <Info className="h-4 w-4" />
-        <AlertTitle>Phase 2 Topic Analysis Active</AlertTitle>
+        <AlertTitle>Phase 5 Active: Document Chat & Multi-Source Paper Import</AlertTitle>
         <AlertDescription className="text-xs leading-relaxed">
-          Server-side OpenAI integration is active with Responses API and modular provider architecture.
-          Submit any academic inquiry in the New Research workspace to generate a structured, verifiable report.
+          Grounded Document Chat, deterministic BM25 passage retrieval, and multi-source paper import (local PDF upload, arXiv URLs/IDs, DOIs via Crossref/OpenAlex, and SSRF-hardened direct URLs) are active. Ingest papers in the New Research workspace or explore your Research Library.
         </AlertDescription>
       </Alert>
     </div>

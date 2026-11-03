@@ -198,10 +198,70 @@ export function DocumentViewer({
             </div>
           </div>
           <CardTitle className="text-xl font-bold tracking-tight text-foreground mt-2">
-            {metadata.sanitizedFilename}
+            {metadata.title || metadata.sanitizedFilename}
           </CardTitle>
-          <CardDescription className="text-xs flex flex-wrap items-center gap-x-4 gap-y-1 mt-1">
-            <span>Original: <strong>{metadata.originalFilename}</strong></span>
+
+          {/* Authors and Publication Details */}
+          {(metadata.authors || metadata.publicationYear || metadata.journalOrConference) && (
+            <div className="text-xs text-muted-foreground mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+              {metadata.authors && metadata.authors.length > 0 && (
+                <span className="font-medium text-foreground">
+                  {metadata.authors.slice(0, 3).join(", ")}
+                  {metadata.authors.length > 3 ? " et al." : ""}
+                </span>
+              )}
+              {metadata.publicationYear && (
+                <span>({metadata.publicationYear})</span>
+              )}
+              {metadata.journalOrConference && (
+                <span className="italic">{metadata.journalOrConference}</span>
+              )}
+            </div>
+          )}
+
+          {/* Metadata & Tag Badges */}
+          <div className="flex flex-wrap items-center gap-1.5 mt-2">
+            {metadata.sourceType && (
+              <Badge variant="outline" className="text-[10px] uppercase font-mono">
+                Source: {metadata.sourceType.replace("_", " ")}
+              </Badge>
+            )}
+            {metadata.documentType && metadata.documentType !== "unknown" && (
+              <Badge variant="secondary" className="text-[10px] capitalize">
+                {metadata.documentType.replace("_", " ")}
+              </Badge>
+            )}
+            {metadata.openAccessStatus && metadata.openAccessStatus !== "unknown" && (
+              <Badge variant="success" className="text-[10px] capitalize">
+                Open Access: {metadata.openAccessStatus}
+              </Badge>
+            )}
+            {metadata.arxivId && (
+              <a
+                href={`https://arxiv.org/abs/${metadata.arxivId}`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 text-[10px] font-mono text-primary hover:underline"
+              >
+                arXiv:{metadata.arxivId}
+                <ExternalLink className="h-2.5 w-2.5" />
+              </a>
+            )}
+            {metadata.doi && (
+              <a
+                href={`https://doi.org/${metadata.doi}`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 text-[10px] font-mono text-primary hover:underline"
+              >
+                DOI:{metadata.doi}
+                <ExternalLink className="h-2.5 w-2.5" />
+              </a>
+            )}
+          </div>
+
+          <CardDescription className="text-xs flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 pt-2 border-t border-border/50">
+            <span>File: <strong>{metadata.sanitizedFilename}</strong></span>
             <span>ID: <code className="font-mono text-[11px]">{metadata.id}</code></span>
             <span>File Size: <strong>{formatFileSize(metadata.fileSizeBytes)}</strong></span>
           </CardDescription>

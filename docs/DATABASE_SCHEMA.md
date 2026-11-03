@@ -45,6 +45,17 @@ erDiagram
         text processing_status
         text extraction_status
         text storage_path "private bucket / local path"
+        text source_type "upload | direct_url | arxiv | doi"
+        text source_url
+        text doi
+        text arxiv_id
+        text title
+        text_array authors
+        integer publication_year
+        text journal_or_conference
+        text open_access_status
+        text document_type
+        text content_hash
         timestamp created_at
     }
 

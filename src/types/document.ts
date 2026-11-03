@@ -28,6 +28,25 @@ export interface DocumentChunk {
   metadata?: Record<string, unknown>;
 }
 
+export type DocumentSourceType = "upload" | "direct_url" | "arxiv" | "doi";
+
+export type OpenAccessStatus =
+  | "gold"
+  | "green"
+  | "hybrid"
+  | "bronze"
+  | "closed"
+  | "unknown";
+
+export type DocumentClassificationType =
+  | "research_paper"
+  | "review_article"
+  | "preprint"
+  | "conference_paper"
+  | "technical_report"
+  | "thesis"
+  | "unknown";
+
 export interface DocumentMetadata {
   id: string;
   originalFilename: string;
@@ -41,6 +60,22 @@ export interface DocumentMetadata {
   ocrRequired: boolean;
   isEncrypted: boolean;
   uploadedAt: string;
+
+  // Extended Scholarly & Source Metadata (Phase 5)
+  sourceType?: DocumentSourceType;
+  sourceUrl?: string;
+  doi?: string;
+  arxivId?: string;
+  title?: string;
+  authors?: string[];
+  publicationYear?: number;
+  journalOrConference?: string;
+  openAccessStatus?: OpenAccessStatus;
+  metadataProvider?: string;
+  importedAt?: string;
+  contentHash?: string;
+  documentType?: DocumentClassificationType;
+  abstract?: string;
 }
 
 export interface ExtractedDocument {

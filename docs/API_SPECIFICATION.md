@@ -403,65 +403,124 @@ Clears messages from an active in-memory conversation session.
 
 ---
 
-## 3. Planned Phase 5 Endpoints (Scholarly Paper Import & Research Library)
+## 3. Active Phase 5 Endpoints (Scholarly Paper Import & Research Library)
 
-The following endpoints represent the planned contracts for the expanded Phase 5 scope:
+### 3.1 `POST /api/documents/import-source`
+Unified scholarly import endpoint supporting arXiv URLs/IDs, academic DOIs (via Crossref, OpenAlex, Semantic Scholar), and direct public HTTPS PDF URLs.
 
-### 3.1 `POST /api/documents/import-url`
-Fetches an academic paper from a public HTTPS URL with SSRF defense validation, verifies `%PDF-` signature, extracts page boundaries, and registers the paper in the Research Library.
-
-**Request Body:**
-```json
-{
-  "url": "https://example-university.edu/papers/quantum-computing.pdf"
-}
-```
-
-**Planned Error Codes:**
-- `SSRF_VIOLATION` (400) — Blocked private/loopback IP or non-HTTPS protocol.
-- `DOWNLOAD_TIMEOUT` (504) — Remote server took > 15s.
-- `PAYLOAD_TOO_LARGE` (413) — Remote file exceeds 15 MB limit.
-
-### 3.2 `POST /api/documents/import-arxiv`
-Fetches paper metadata via the arXiv API and downloads the corresponding PDF directly from arXiv.
+- **Authentication:** Public
+- **Content-Type:** `application/json`
 
 **Request Body:**
 ```json
 {
-  "arxivId": "2301.12345"
+  "source": "1706.03762",
+  "customTitle": "Attention Is All You Need"
 }
 ```
 
-### 3.3 `POST /api/documents/import-doi`
-Resolves metadata for a digital object identifier via Crossref / OpenAlex / Semantic Scholar, attempts to resolve open-access PDF links via Unpaywall, and extracts the paper into the workspace.
-
-**Request Body:**
-```json
-{
-  "doi": "10.1145/3318464.3389700"
-}
-```
-
-### 3.4 `GET /api/documents`
-Lists all ingested papers registered in the in-memory Research Library catalog with full scholarly metadata.
-
-**Response (200 OK):**
+**Success Response (201 Created — Open Access PDF Available):**
 ```json
 {
   "success": true,
   "data": {
-    "papers": [
-      {
-        "id": "doc_1730623200000_a1b2c3d4e5f6",
+    "resolution": {
+      "detectedType": "arxiv",
+      "normalizedIdentifier": "1706.03762",
+      "rawInput": "1706.03762",
+      "pdfUrl": "https://arxiv.org/pdf/1706.03762.pdf",
+      "isOpenAccess": true,
+      "fullTextAvailable": true,
+      "metadata": {
         "title": "Attention Is All You Need",
         "authors": ["Ashish Vaswani", "Noam Shazeer"],
-        "year": 2017,
-        "sourceType": "upload",
+        "publicationYear": 2017,
+        "arxivId": "1706.03762",
+        "metadataProvider": "arxiv",
+        "openAccessStatus": "green"
+      }
+    },
+    "fullTextAvailable": true,
+    "document": { ... }
+  },
+  "metadata": {
+    "timestamp": "2026-11-03T14:30:00.000Z",
+    "processingTimeMs": 620
+  }
+}
+```
+
+**Success Response (200 OK — Paywalled / Metadata Only):**
+```json
+{
+  "success": true,
+  "data": {
+    "resolution": {
+      "detectedType": "doi",
+      "normalizedIdentifier": "10.1000/182",
+      "fullTextAvailable": false,
+      "isOpenAccess": false,
+      "landingPageUrl": "https://doi.org/10.1000/182",
+      "accessNote": "Full text is not publicly accessible via open access repositories for this DOI. You can upload the paper PDF manually."
+    },
+    "fullTextAvailable": false,
+    "message": "Scholarly metadata was resolved, but the full-text PDF is not publicly accessible..."
+  }
+}
+```
+
+**Error Codes:**
+- `SSRF_VIOLATION` (400) — Blocked private/loopback IP address or non-HTTPS protocol.
+- `UNSUPPORTED_SOURCE` (400) — Input format is unrecognized or invalid.
+- `PAYLOAD_TOO_LARGE` (413) — Downloaded file exceeds 15 MB limit.
+- `HTML_NOT_PDF` (422) — Remote URL returned HTML landing page instead of PDF.
+- `INVALID_FILE_SIGNATURE` (415) — File buffer does not contain `%PDF-` signature.
+- `DOWNLOAD_TIMEOUT` (504) — Remote download timed out after 15 seconds.
+
+### 3.2 `GET /api/documents`
+Lists all documents and papers stored in the in-memory Research Library.
+
+**Query Parameters:**
+- `q` *(string, optional)*: Filter papers by title, author, arXiv ID, or DOI.
+
+**Success Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "documents": [
+      {
+        "id": "doc_1730623200000_a1b2c3d4e5f6",
+        "originalFilename": "attention.pdf",
+        "title": "Attention Is All You Need",
+        "authors": ["Ashish Vaswani", "Noam Shazeer"],
+        "publicationYear": 2017,
+        "sourceType": "arxiv",
+        "arxivId": "1706.03762",
         "pageCount": 11,
-        "wordCount": 5420,
+        "totalWordCount": 5420,
+        "openAccessStatus": "green",
         "uploadedAt": "2026-11-03T13:30:00.000Z"
       }
     ]
+  },
+  "metadata": {
+    "timestamp": "2026-11-03T14:30:00.000Z",
+    "count": 1
+  }
+}
+```
+
+### 3.3 `DELETE /api/documents/[id]`
+Deletes a document from the Research Library and clears associated chat sessions.
+
+**Success Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "doc_1730623200000_a1b2c3d4e5f6",
+    "deleted": true
   }
 }
 ```

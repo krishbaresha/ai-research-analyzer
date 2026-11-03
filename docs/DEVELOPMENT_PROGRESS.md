@@ -13,8 +13,8 @@
 | **Phase 2** | Server-Side OpenAI Integration (Responses API) & Topic-Based Analysis | **COMPLETED** | 2026-11-03 |
 | **Phase 3** | PDF Upload and Reliable Text Extraction | **COMPLETED** | 2026-11-03 |
 | **Phase 4** | PDF Analysis and Evidence-Grounded Reports | **COMPLETED** | 2026-11-03 |
-| **Phase 5** | Document Chat + Scholarly Paper Import + Research Library Foundation | **NEXT / IN PROGRESS** (Expanded Scope Pending) | — |
-| **Phase 6** | Persistence, Projects, and History | Planned | — |
+| **Phase 5** | Document Chat + Scholarly Paper Import + Research Library Foundation | **COMPLETED** | 2026-11-03 |
+| **Phase 6** | Persistence, Projects, and History | Planned (Next) | — |
 | **Phase 7** | Multi-Document Synthesis and Literature Reviews | Planned | — |
 | **Phase 8** | Web Research and Live Academic Source Discovery | Planned | — |
 | **Phase 9** | Export, Polish, and Production Readiness | Planned | — |
@@ -142,76 +142,64 @@
 
 ---
 
-## Phase 5: Document Chat + Scholarly Paper Import + Research Library Foundation (Next / Prototype In Progress)
+## Phase 5: Document Chat + Scholarly Paper Import + Research Library Foundation (Completed)
 
-> **Clarification:** An initial in-memory document chat prototype featuring deterministic BM25 retrieval and claim citations was developed in commit `267df7c` with 92 passing tests. However, the user has formally expanded the scope of Phase 5 to encompass **Scholarly Paper Import (URL, arXiv, DOI)**, **SSRF Defense**, **Research Library Foundation**, and **Event Architecture Foundation**. Implementation of these expanded capabilities has **NOT** been started.
-
-### 1. Requirements Delivered in Chat Prototype (Commit `267df7c`)
-- **Full-Document Scope & Deterministic BM25 Passage Retrieval (`src/lib/retrieval/retriever.ts`):**
-  - Designed and implemented a lightweight, deterministic server-side passage retrieval engine operating across ALL extracted pages (1 to N) stored in `DocumentStore` without Phase 4 sampling restrictions.
+### 1. Requirements Delivered
+- **Part A — Grounded Document Chat & BM25 Passage Retrieval:**
+  - Designed and implemented a lightweight, deterministic server-side passage retrieval engine operating across ALL extracted pages (1 to N) stored in `DocumentStore` without Phase 4 sampling restrictions (`src/lib/retrieval/retriever.ts`).
   - Chunks document pages into overlapping segments (~900 chars, 150-char overlap) strictly preserving 1-indexed original page numbers.
-  - Tokenizes queries into normalized keywords with academic stop-word filtering.
-  - Implements BM25/TF-IDF term weighting across chunks, with explicit page number detection (e.g. boosting page 4 when the user specifies "on page 4").
+  - Implemented BM25/TF-IDF term weighting across chunks, with explicit page number detection (e.g. boosting page 4 when the user specifies "on page 4").
   - Bounded passage selection (top 5 chunks up to 10,000 characters).
   - Explicit abstention: if no passages meet the relevance threshold, returns an empty set so the model abstains rather than hallucinates.
-  - Zero external vector databases, zero embedding APIs, zero new infrastructure.
-- **Bounded In-Memory Conversation Storage (`src/lib/storage/conversation-store.ts`):**
-  - Ephemeral session storage associating conversations strictly with their target `documentId`.
-  - Enforces bounded history (maximum 20 messages per session) with FIFO/LRU eviction across 50 active sessions to prevent unbounded memory growth.
-  - Validates document-to-conversation association, rejecting cross-document session tampering with HTTP 400.
-  - Clear and delete session lifecycle operations.
-- **Grounded Chat Prompts & Schema Contracts (`src/lib/ai/prompts.ts`, `src/lib/validation/chat.schema.ts`, `src/lib/ai/parsers.ts`):**
-  - Defined `DOCUMENT_CHAT_SYSTEM_INSTRUCTION` and `buildDocumentChatPrompt` wrapping passages in `<retrieved_passage page="N">` tags with XML delimiter sanitization.
-  - Defined strict Zod schemas for `chatAssistantResponseSchema`, requiring 4 evidence statuses: `supported`, `partially_supported`, `not_found`, and `interpretation`.
+  - Bounded in-memory conversation storage (`src/lib/storage/conversation-store.ts`) with 20-message FIFO eviction.
+  - Grounded Chat Prompts & Schema Contracts (`chatAssistantResponseSchema`) with 4 evidence statuses: `supported`, `partially_supported`, `not_found`, and `interpretation`.
   - Claim-level attribution: models return individual claims with specific `pageReferences: number[]` and `evidenceStatus`.
-  - Source tracking: models provide `sources: [{ pageNumber, relevanceReason, excerpt }]`.
-  - Untrusted data boundary and anti-override instructions strictly enforced.
-- **Official OpenAI Responses API Integration (`src/lib/ai/openai.provider.ts`):**
-  - Added `chatDocument(options: DocumentChatOptions)` to `AIProvider` and `OpenAIProvider`.
-  - Invokes `client.responses.create()` with robust fallback to `client.chat.completions.create()`.
-  - Passes recent conversation history (up to 6 messages) for dialogue continuity.
-- **REST API Routes (`POST /api/documents/[id]/chat` & `DELETE /api/documents/[id]/chat`):**
-  - Validates document presence (`404 NOT_FOUND` for missing).
-  - Blocks scanned/image-only PDFs (`422 UNPROCESSABLE_ENTITY`, code `OCR_REQUIRED`).
-  - Supports conversation continuation and new session generation.
-  - Returns standardized response with assistant message, claim citations, sources, and retrieval transparency metadata (`pagesSearched`, `pagesUsed`, `partialCoverage`).
-- **Interactive Workspace UI (`src/features/document-chat/components/document-chat.tsx`):**
-  - Clean academic research assistant layout with user and assistant message styling.
-  - Evidence status badges: `Supported by Document`, `Partially Supported`, `Not in Document (Abstained)`, and `Analytical Interpretation`.
-  - Clickable page citation pills (`p. 2`, `p. 5`) with smooth navigation: clicking any citation switches to the "Extracted Pages" tab, scrolls smoothly to that page card, and visually highlights it.
-  - Sources accordion detailing why each page supports the answer.
-  - Retrieval transparency pill: `"Searched X pages • Evidence cited from: p. Y, Z"`.
-  - Empty state with 5 one-click example research questions.
-  - Clear chat action and error recovery state.
-  - Seamlessly integrated as a primary tab in `DocumentViewer` (`src/features/pdf-analysis/components/document-viewer.tsx`).
+  - Clickable page citation pills (`p. 2`, `p. 5`) with smooth navigation and visual highlighting in the Document Workspace.
+  - REST routes: `POST /api/documents/[id]/chat` and `DELETE /api/documents/[id]/chat`.
+- **Part B — Multi-Source Scholarly Paper Import & SSRF Defense:**
+  - Added new source-import interface supporting 4 ingestion modes: Local PDF upload, Public PDF URL, arXiv paper URL/ID, and academic DOI.
+  - Built modular metadata provider adapters (`src/lib/import/providers/`): Crossref, OpenAlex, arXiv, and Semantic Scholar.
+  - Automatic Open Access PDF discovery: retrieves public open-access PDF links via OpenAlex and arXiv.
+  - Honest paywall handling: when full text is unavailable, displays complete scholarly metadata, official publisher link, clear paywall explanation, and offers manual PDF upload fallback.
+  - SSRF Defense Architecture (`src/lib/security/ssrf.ts`):
+    - HTTPS-only enforcement.
+    - Pre-request DNS resolution checks blocking private, loopback, link-local, multicast, and cloud metadata IP ranges (`127.0.0.0/8`, `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `169.254.0.0/16`, `::1`, `fc00::/7`).
+    - Bound redirection (max 3 hops) with SSRF revalidation on every hop.
+    - Streaming byte counter capping downloads at 15 MB.
+    - Strict 15-second request timeouts.
+    - Content-Type verification and `%PDF-` magic bytes header validation.
+    - Rejection of HTML error pages pretending to be PDFs (`HTML_NOT_PDF`).
+    - Zero forwarding of client credentials or cookies.
+- **Part C — Smart Document Processing Pipeline:**
+  - Implemented unified coordinated processing workflow (`src/lib/pipeline/document-processor.ts`):
+    `Import -> Validate Signature & Size -> Extract Pages (unpdf) -> Attach Scholarly Metadata -> Classify Document -> Compute SHA-256 Content Hash -> Ephemeral Store -> Emit Domain Events`.
+  - Rule-based document type classification (`classifyDocument`): classifies papers as `preprint`, `review_article`, `thesis`, `conference_paper`, `technical_report`, or `research_paper`.
+  - Preserved Phase 3 and Phase 4 functionality without duplicating extraction logic.
+- **Part D — Research Library Foundation:**
+  - Implemented `/documents` Research Library workspace.
+  - Listing, searching by title/author/DOI (`documentStore.search`), opening in workspace, and deleting papers.
+  - Clear banner explaining in-memory storage is temporary and will be replaced by persistent storage in Phase 6.
+  - REST route: `GET /api/documents` and `DELETE /api/documents/[id]`.
+- **Part E — Future Automation Event Bus:**
+  - Implemented lightweight, synchronous in-memory event bus (`src/lib/events/event-bus.ts`).
+  - Defined 7 domain event types: `document.uploaded`, `document.imported`, `document.extracted`, `document.classified`, `document.analysis.completed`, `document.analysis.failed`, `document.chat.created`.
+  - Preserves sliding in-memory history window (100 events) for automation triggers and verification.
 
 ### 2. Quality Assurance & Test Verification
-- **Automated Vitest Suite (92 tests passing across 17 files):**
-  - `tests/unit/retriever.test.ts` (7 tests): Keyword normalization, explicit page number detection, overlapping chunking, multi-page retrieval (early/mid/late pages), page query boost, abstention on irrelevant queries, empty document handling.
-  - `tests/unit/conversation-store.test.ts` (6 tests): Session creation, retrieval, chronological message storage, 20-message bounded history eviction, clear session, delete session.
-  - `tests/unit/chat-parsers.test.ts` (5 tests): JSON parsing, code fence stripping, single-number-to-array coercion, invalid JSON error handling, missing required fields.
-  - `tests/integration/document-chat.test.ts` (6 tests): End-to-end chat endpoint, new session creation, continuation with `conversationId`, 404 for missing document, 400 for document mismatch, 422 for scanned PDF, DELETE conversation clearing.
-  - `tests/security/chat-security.test.ts` (3 tests): Rogue XML delimiter sanitization, prompt injection anti-override directives, secret isolation audit.
-  - All prior test suites retained and passing: 65 tests across Phase 1–4 suites.
-- **Live OpenAI API Verification:**
-  - Tested supported question against real academic paper: accurately retrieved Page 2, quoted 3.2x/4.1x speedup, attached `pageReferences: [2]`, and returned `supported`.
-  - Tested unsupported question (CRISPR): retrieved 0 passages, returned `evidenceStatus: "not_found"`, honestly stated the document does not mention the topic, zero hallucinated citations.
-  - Tested follow-up question preserving conversation context.
+- **Automated Vitest Suite (130 tests passing across 23 files):**
+  - `tests/security/ssrf-defense.test.ts` (12 tests): Loopback IPv4/IPv6, private ranges, link-local, cloud metadata, non-HTTPS protocols, embedded credentials, internal hostnames, redirect to private IP, HTML response rejection, magic bytes signature rejection, and valid PDF fetch.
+  - `tests/unit/source-resolver.test.ts` (12 tests): arXiv abstract/PDF URL normalization, raw arXiv IDs, legacy IDs, DOI extraction from URLs and text, punctuation stripping, open-access resolution, and paywalled notice.
+  - `tests/integration/paper-import.test.ts` (4 tests): Empty source 422, SSRF attempt 400, paywalled DOI 200 metadata-only response, open-access arXiv end-to-end import into Research Library.
+  - `tests/integration/library.test.ts` (3 tests): List all papers, search by keyword (?q=mamba), and delete paper by ID.
+  - `tests/unit/event-bus.test.ts` (3 tests): Subscription, unsubscription, sliding history window.
+  - `tests/unit/document-classifier.test.ts` (4 tests): Preprint, review article, conference paper, research paper classification.
+  - Retained all prior suites: document chat (6 tests), retriever (7 tests), conversation store (6 tests), chat parsers (5 tests), chat security (3 tests), phase 4 QA audit (9 tests), document analysis (7 tests), document budgeter (4 tests), document prompts (3 tests), document parsers (4 tests), pdf validator (7 tests), pdf extractor (6 tests), document upload (5 tests), secret isolation (3 tests), parsers (7 tests), prompts (4 tests), openai provider (6 tests).
 - **Verification Commands:**
   - `pnpm lint`: Zero warnings, zero errors (`No ESLint warnings or errors`).
   - `pnpm type-check`: Strict mode passed with zero errors (`tsc --noEmit`).
-  - `pnpm test`: 92 / 92 tests passed across 17 test files.
-  - `pnpm build`: Next.js production build succeeded with all 11 routes compiled.
+  - `pnpm test`: 130 / 130 tests passed across 23 test files.
+  - `pnpm build`: Next.js production build succeeded with all 13 routes compiled.
 
-### 3. Expanded Phase 5 Scope Requirements (Pending Implementation)
-1. **Public PDF URL Ingestion:** Stream remote HTTPS PDFs into the extraction pipeline with size bounds (15MB) and timeout limits (15s).
-2. **arXiv Paper Import:** Ingest arXiv papers by ID or URL, retrieving metadata via arXiv API and downloading official preprints.
-3. **DOI Paper Import:** Ingest papers by DOI, retrieving metadata via Crossref / OpenAlex / Semantic Scholar, and resolving open-access PDFs via Unpaywall.
-4. **SSRF Defense Suite:** Implement strict IP resolution validation, blocking loopback, link-local, and cloud metadata ranges before HTTP dispatch.
-5. **In-Memory Research Library Foundation:** Catalog papers with metadata and provide a dashboard library view.
-6. **Event Architecture Hook:** Synchronous in-memory event bus emitting domain lifecycle events.
-
-### 4. Phase Boundary Enforced
-- Phase 5 expanded implementation has **NOT** been started in this turn.
-- Zero source code changes made in `src/`.
-- Zero database libraries (PostgreSQL, Supabase) or external vector DBs introduced. Storage remains strictly in-memory per ADR-004.
+### 3. Next Phase Readiness
+- Ready for **Phase 6: Persistence, Projects, and History**.
+- Scope boundary enforced: Phase 6 has NOT been started. Zero external database infrastructure or vector databases introduced. Storage remains strictly in-memory per ADR-004.

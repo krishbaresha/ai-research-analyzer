@@ -124,21 +124,35 @@ The application enforces a unidirectional four-tier architecture with strict bou
 - Built interactive frontend `DocumentReportViewer` with clickable citation navigation to extracted pages.
 - Successfully executed live OpenAI verification and comprehensive QA audit (Commit `4c6a9a7`).
 
-### Current Codebase State Regarding Document Chat (Commit `267df7c`)
-- An initial in-memory document chat prototype was developed in commit `267df7c`, featuring deterministic BM25 passage retrieval (`retriever.ts`), in-memory conversation storage (`conversation-store.ts`), and claim-level page citations.
-- **Clarification:** While this grounded Q&A foundation is operational in code, the full, expanded scope of Phase 5 (Scholarly Paper Import from URL/arXiv/DOI, SSRF defense suite, Research Library foundation, and automation event hooks) has **NOT** been implemented. Phase 5 is officially designated as the **NEXT** phase to be comprehensively delivered.
+### Phase 5: Document Chat + Scholarly Paper Import + Research Library Foundation (Completed)
+- Built Grounded Document Chat with deterministic BM25 passage retrieval across all pages (`retriever.ts`) and claim citations.
+- Implemented multi-source scholarly paper import: local PDF upload, public PDF URLs, arXiv paper URLs/IDs, and academic DOIs (via Crossref, OpenAlex, Semantic Scholar).
+- Implemented SSRF Defense suite (`ssrf.ts`, `fetcher.ts`) with DNS resolution, private/loopback IP blocklists, and redirect limits.
+- Built unified Smart Document Processing pipeline (`document-processor.ts`) with rule-based document classification and SHA-256 content hashes.
+- Established `/documents` Research Library workspace with keyword search and paper management.
+- Implemented synchronous in-memory Domain Event Bus (`event-bus.ts`) with 7 domain event types.
 
 ---
 
 ## 5. Verified Testing & Build Status
 
-- **Automated Test Suites:** 17 test files, **92 / 92 tests passing (100%)** via Vitest.
-  - Unit tests: PDF validator, PDF extractor, document budgeter, document retriever, conversation store, parsers, prompts.
-  - Integration tests: Document upload, document analysis, document chat, OpenAI provider, Phase 4 QA audit.
-  - Security tests: Secret isolation (server-key leak prevention), chat XML delimiter sanitization, prompt injection defenses.
+- **Automated Test Suites:** 23 test files, **130 / 130 tests passing (100%)** via Vitest.
+  - SSRF defense suite (12 tests)
+  - Source resolver & scholarly adapters (12 tests)
+  - Paper import API integration (4 tests)
+  - Research library API integration (3 tests)
+  - Domain event bus (3 tests)
+  - Document classifier (4 tests)
+  - Document chat & conversation store (17 tests)
+  - Document analysis & budgeting (15 tests)
+  - PDF validator & extractor (13 tests)
+  - Prompt injection & secret isolation (13 tests)
+  - Topic analysis & OpenAI provider (13 tests)
+  - Phase 4 QA audit (9 tests)
+  - Parsers & schema validation (12 tests)
 - **TypeScript Strictness:** Clean compilation with zero errors (`tsc --noEmit`).
 - **ESLint:** Clean run with zero warnings or errors (`next lint`).
-- **Production Build:** Next.js production build cleanly compiles all 11 application routes.
+- **Production Build:** Next.js production build cleanly compiles all 13 application routes.
 
 ---
 
@@ -269,8 +283,8 @@ To maintain focus and avoid scope bloat, the following are strictly prohibited i
 | **Phase 2** | Server-Side OpenAI Integration & Topic Research | **COMPLETED** | OpenAI Responses API integration, topic-based research workflow, 8-section reports, domain error handling. |
 | **Phase 3** | PDF Upload & Reliable Text Extraction | **COMPLETED** | Server-side PDF validation, `unpdf` page boundary mapping, scanned document detection, ephemeral document store. |
 | **Phase 4** | PDF Analysis & Evidence-Grounded Reports | **COMPLETED** | Context-budgeted document analysis, 12 academic report sections, clickable page citations, prompt injection defense. |
-| **Phase 5** | Document Chat + Scholarly Paper Import + Research Library Foundation | **NEXT** | Grounded Q&A, URL/arXiv/DOI paper import, SSRF defense suite, in-memory Research Library, and event bus foundation. |
-| **Phase 6** | Persistence, Projects & Research History | Planned | Supabase / PostgreSQL database integration, user research workspaces, persistent paper library, project tagging. |
+| **Phase 5** | Document Chat + Scholarly Paper Import + Research Library Foundation | **COMPLETED** | Grounded Q&A, URL/arXiv/DOI paper import, SSRF defense suite, in-memory Research Library, and event bus foundation. |
+| **Phase 6** | Persistence, Projects & Research History | **NEXT** | Supabase / PostgreSQL database integration, user research workspaces, persistent paper library, project tagging. |
 | **Phase 7** | Multi-Document Synthesis & Literature Reviews | Planned | Cross-paper comparative analysis, matrix generation, citation graph synthesis, and literature review builder. |
 | **Phase 8** | Web Research & Live Academic Source Discovery | Planned | Controlled academic search integration, live paper discovery, preprint tracking, and verified external citations. |
 | **Phase 9** | Export, Polish & Production Readiness | Planned | Publication-ready PDF/Markdown/BibTeX export, responsive refinement, performance auditing, WCAG AA accessibility. |

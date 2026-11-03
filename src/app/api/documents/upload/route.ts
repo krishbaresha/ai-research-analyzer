@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { extractPDF, PDFValidationError } from "@/lib/pdf";
-import { documentStore } from "@/lib/storage/document-store";
+import { PDFValidationError } from "@/lib/pdf";
+import { processDocument } from "@/lib/pipeline/document-processor";
 
 export async function POST(req: NextRequest) {
   const startTime = Date.now();
@@ -37,19 +37,16 @@ export async function POST(req: NextRequest) {
     }
 
     const originalFilename = file instanceof File ? file.name : "document.pdf";
-    const clientMimeType = file.type;
 
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // Extract text page by page (NO OpenAI calls in Phase 3)
-    const extractedDocument = await extractPDF(buffer, {
+    // Process document through smart pipeline
+    const extractedDocument = await processDocument({
+      buffer,
       originalFilename,
-      clientMimeType,
+      sourceType: "upload",
     });
-
-    // Store temporarily in memory store
-    await documentStore.save(extractedDocument);
 
     const processingTimeMs = Date.now() - startTime;
 

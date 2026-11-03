@@ -51,6 +51,12 @@ pnpm build
 
 | Test Suite | File | Tests | Result | Purpose |
 |---|---|---|---|---|
+| **SSRF Defense Suite** | `tests/security/ssrf-defense.test.ts` | 12 | **PASSED** | Verifies loopback, link-local, private, cloud metadata IP blocking, HTTPS protocol enforcement, redirect loop & private redirect bounds, HTML response rejection, signature check, and valid PDF streaming. |
+| **Source Resolver & Adapters** | `tests/unit/source-resolver.test.ts` | 12 | **PASSED** | Verifies arXiv URL/ID normalization, legacy arXiv formats, DOI extraction, trailing punctuation handling, OpenAlex/Crossref open-access resolution, and paywall notifications. |
+| **Paper Import Integration** | `tests/integration/paper-import.test.ts` | 4 | **PASSED** | Verifies `POST /api/documents/import-source` endpoint: validation failure (422), SSRF rejection (400), paywalled DOI handling (200), and open-access PDF import into Research Library (201). |
+| **Research Library Integration** | `tests/integration/library.test.ts` | 3 | **PASSED** | Verifies `GET /api/documents` listing, keyword search filtering (`?q=mamba`), and `DELETE /api/documents/[id]`. |
+| **Domain Event Bus** | `tests/unit/event-bus.test.ts` | 3 | **PASSED** | Verifies subscription, unsubscription, and sliding in-memory history window across domain events. |
+| **Document Classifier** | `tests/unit/document-classifier.test.ts` | 4 | **PASSED** | Verifies rule-based classification for preprints, review articles, conference papers, and standard research papers. |
 | **Document Retriever** | `tests/unit/retriever.test.ts` | 7 | **PASSED** | Verifies BM25/TF-IDF keyword tokenization, page query extraction, overlapping page chunking, multi-page retrieval across all pages, explicit page boosting, abstention on irrelevant queries, and empty document handling. |
 | **Conversation Store** | `tests/unit/conversation-store.test.ts` | 6 | **PASSED** | Verifies ephemeral session creation, session lookup, chronological message append, 20-message bounded context FIFO eviction, clear session, and session deletion. |
 | **Document Chat Parsers** | `tests/unit/chat-parsers.test.ts` | 5 | **PASSED** | Verifies JSON parsing against `chatAssistantResponseSchema`, markdown code fence stripping, single-number page citation coercion, syntax error handling, and missing field rejection. |
@@ -69,7 +75,7 @@ pnpm build
 | **Topic Prompts & Anti-Injection** | `tests/unit/prompts.test.ts` | 4 | **PASSED** | Verifies structural isolation delimiters (`<user_topic>`, `<scope_constraints>`) and defensive system instructions forbidding prompt overrides. |
 | **OpenAI Provider Integration (Mocked)** | `tests/integration/openai-provider.test.ts` | 6 | **PASSED** | Verifies `client.responses.create()` calls, `AIAuthError` on missing key, 401 handling, 429 quota/rate limit error mapping, and malformed output rejection. |
 
-**Total:** 17 test files, 92 automated tests, 100% passing.
+**Total:** 23 test files, 130 automated tests, 100% passing.
 
 ---
 
@@ -77,7 +83,7 @@ pnpm build
 
 | Check | Tool / Command | Result | Details |
 |---|---|---|---|
-| **Unit & Integration Tests** | `vitest run` | **92 / 92 PASSED** | All document chat, retrieval, budgeting, extraction, prompt, provider, and security tests pass. |
+| **Unit & Integration Tests** | `vitest run` | **130 / 130 PASSED** | All document chat, retrieval, budgeting, extraction, prompt, provider, and SSRF security tests pass. |
 | **TypeScript Strictness** | `pnpm type-check` | **PASSED (0 errors)** | Zero type errors with strict mode enabled. |
 | **Next.js Linter** | `pnpm lint` | **PASSED (0 warnings)** | Clean lint run, zero warnings or errors. |
 | **Production Build** | `pnpm build` | **PASSED** | All 11 static and server-rendered routes compile cleanly. |

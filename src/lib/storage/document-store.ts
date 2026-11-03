@@ -4,6 +4,7 @@ export interface DocumentStore {
   save(document: ExtractedDocument): Promise<ExtractedDocument>;
   get(id: string): Promise<ExtractedDocument | null>;
   list(): Promise<DocumentMetadata[]>;
+  search(query: string): Promise<DocumentMetadata[]>;
   delete(id: string): Promise<boolean>;
   clear(): Promise<void>;
   count(): Promise<number>;
@@ -28,6 +29,23 @@ class InMemoryDocumentStore implements DocumentStore {
 
   async list(): Promise<DocumentMetadata[]> {
     return Array.from(this.store.values()).map((doc) => doc.metadata);
+  }
+
+  async search(query: string): Promise<DocumentMetadata[]> {
+    const q = query.toLowerCase().trim();
+    if (!q) return this.list();
+
+    return Array.from(this.store.values())
+      .filter((doc) => {
+        const m = doc.metadata;
+        const titleMatch = m.title?.toLowerCase().includes(q) || false;
+        const filenameMatch = m.originalFilename.toLowerCase().includes(q);
+        const doiMatch = m.doi?.toLowerCase().includes(q) || false;
+        const arxivMatch = m.arxivId?.toLowerCase().includes(q) || false;
+        const authorMatch = m.authors?.some((a) => a.toLowerCase().includes(q)) || false;
+        return titleMatch || filenameMatch || doiMatch || arxivMatch || authorMatch;
+      })
+      .map((doc) => doc.metadata);
   }
 
   async delete(id: string): Promise<boolean> {

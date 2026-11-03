@@ -5,12 +5,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Compass,
-  FileText,
   PlusCircle,
   Settings,
   Sparkles,
   Cpu,
   Layers,
+  BookOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -33,9 +33,9 @@ const navItems: NavItem[] = [
     icon: PlusCircle,
   },
   {
-    title: "Document Workspace",
-    href: "/documents/sample",
-    icon: FileText,
+    title: "Research Library",
+    href: "/documents",
+    icon: BookOpen,
   },
   {
     title: "System & Settings",
@@ -136,7 +136,7 @@ export function Sidebar({ className }: { className?: string }) {
             </span>
             <span className="flex items-center gap-1 font-mono">
               <Layers className="h-3 w-3" />
-              Phase 2
+              Phase 5
             </span>
           </div>
         </div>

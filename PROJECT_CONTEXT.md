@@ -17,15 +17,12 @@
   - Phase 2: Server-Side OpenAI Integration & Topic Research
   - Phase 3: PDF Upload & Reliable Text Extraction
   - Phase 4: PDF Analysis & Evidence-Grounded Reports
-- **Next Phase (Expanded Scope):**
-  - **Phase 5: Document Chat + Scholarly Paper Import + Research Library Foundation**
-    1. Grounded Document Chat (Full-Document Scope with deterministic BM25 retrieval).
-    2. Multi-source Paper Import (Local PDF upload, Public PDF URL, arXiv ID/URL, DOI / Crossref / OpenAlex / Semantic Scholar).
-    3. Safe Remote Document Fetching & SSRF Defense Layer (IP pinning, DNS resolution, private range blocklists).
-    4. Smart Document Processing Pipeline (single unified extraction & validation pipeline).
-    5. In-Memory Research Library Foundation (metadata catalog, dashboard papers tab).
-    6. Event Architecture Foundation (synchronous in-memory event bus for future automations).
-- **Status of Phase 5:** **NOT STARTED** (In-memory document chat prototype exists in commit `267df7c`, but expanded paper import, SSRF defense, library foundation, and event hooks are pending implementation).
+  - Phase 5: Document Chat + Scholarly Paper Import + Research Library Foundation
+- **Next Phase:**
+  - **Phase 6: Persistence, Projects & Research History**
+    - Supabase / PostgreSQL database integration.
+    - Persistent research workspaces, user library, and tagging.
+- **Status:** **PHASE 5 COMPLETED — READY FOR PHASE 6**
 - **Core Rules:**
   1. Server-side key isolation (`OPENAI_API_KEY` never sent to client).
   2. Grounded evidence & zero hallucination.
