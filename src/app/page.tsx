@@ -12,7 +12,6 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -59,10 +58,10 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="border-border/80">
           <CardHeader className="pb-2">
-            <CardDescription className="flex items-center justify-between text-xs uppercase tracking-wider">
+            <div className="flex items-center justify-between text-xs uppercase tracking-wider text-muted-foreground">
               <span>Inference Engine</span>
               <Badge variant="outline" className="text-[10px] font-mono">Server-Side</Badge>
-            </CardDescription>
+            </div>
             <CardTitle className="text-base font-semibold">OpenAI API Architecture</CardTitle>
           </CardHeader>
           <CardContent className="space-y-1.5 text-xs text-muted-foreground">
@@ -85,10 +84,10 @@ export default function DashboardPage() {
 
         <Card className="border-border/80">
           <CardHeader className="pb-2">
-            <CardDescription className="flex items-center justify-between text-xs uppercase tracking-wider">
+            <div className="flex items-center justify-between text-xs uppercase tracking-wider text-muted-foreground">
               <span>Document Engine</span>
               <Badge variant="outline" className="text-[10px]">Phase 3 Ready</Badge>
-            </CardDescription>
+            </div>
             <CardTitle className="text-base font-semibold">PDF Text Extraction</CardTitle>
           </CardHeader>
           <CardContent className="space-y-1.5 text-xs text-muted-foreground">
@@ -109,10 +108,10 @@ export default function DashboardPage() {
 
         <Card className="border-border/80">
           <CardHeader className="pb-2">
-            <CardDescription className="flex items-center justify-between text-xs uppercase tracking-wider">
+            <div className="flex items-center justify-between text-xs uppercase tracking-wider text-muted-foreground">
               <span>Trust & Grounding</span>
               <Badge variant="outline" className="text-[10px]">Contract v1</Badge>
-            </CardDescription>
+            </div>
             <CardTitle className="text-base font-semibold">Evidence Categorization</CardTitle>
           </CardHeader>
           <CardContent className="space-y-1.5 text-xs text-muted-foreground">
