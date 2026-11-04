@@ -11,12 +11,12 @@ export type ExplorerEvidenceStatus =
 export interface ResearchIdentity {
   title: string;
   authors: string[];
-  publicationYear?: string | number;
-  journalOrConference?: string;
-  doi?: string;
-  arxivId?: string;
-  openAccessStatus?: string;
-  researchDomain?: string;
+  publicationYear?: string | number | null;
+  journalOrConference?: string | null;
+  doi?: string | null;
+  arxivId?: string | null;
+  openAccessStatus?: string | null;
+  researchDomain?: string | null;
   pageCount: number;
   sourceType: string;
 }
@@ -59,9 +59,9 @@ export interface ExplorerSectionItem {
   researcherTechnical: string;
   evidenceStatus: ExplorerEvidenceStatus;
   pageReferences: number[];
-  quote?: string;
+  quote?: string | null;
   bulletPoints?: string[];
-  keyValuePairs?: Array<{ key: string; value: string; page?: number }>;
+  keyValuePairs?: Array<{ key: string; value: string; page?: number | null }>;
 }
 
 export interface ChartDataPoint {
@@ -93,8 +93,8 @@ export interface WorkflowStep {
   stepNumber: number;
   title: string;
   description: string;
-  technicalNote?: string;
-  pageReference?: number;
+  technicalNote?: string | null;
+  pageReference?: number | null;
 }
 
 export interface WorkflowDiagram {
@@ -110,7 +110,7 @@ export interface GlossaryTerm {
   term: string;
   plainDefinition: string;
   technicalDefinition: string;
-  analogy?: string;
+  analogy?: string | null;
   pageReferences: number[];
 }
 

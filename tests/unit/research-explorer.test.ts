@@ -241,6 +241,29 @@ describe("Research Explorer Parser & Schema Validator (Unit)", () => {
     }
   });
 
+  it("handles null values in identity (e.g. arxivId: null, doi: null) without throwing schema error", () => {
+    const payloadWithNulls = {
+      ...validExplorerPayload,
+      identity: {
+        ...validExplorerPayload.identity,
+        arxivId: null,
+        doi: null,
+        journalOrConference: null,
+        openAccessStatus: null,
+      },
+    };
+
+    const rawJson = JSON.stringify(payloadWithNulls);
+    const result = parseAndValidateResearchExplorer(
+      rawJson,
+      "gpt-4o-mini",
+      dummyDocument.metadata.id,
+      dummyDocument.metadata
+    );
+
+    expect(result.identity.title).toBe(validExplorerPayload.identity.title);
+  });
+
   it("throws AIResponseParseError when input is completely unparseable", () => {
     expect(() =>
       parseAndValidateResearchExplorer("Not JSON at all", "gpt-4o-mini", dummyDocument.metadata.id, dummyDocument.metadata)
