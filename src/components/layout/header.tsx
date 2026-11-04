@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { Plus, Menu, X, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { BrandIcon } from "@/components/brand/logo";
 
 interface HeaderProps {
   onMobileMenuToggle?: () => void;
@@ -29,6 +30,10 @@ export function Header({
             <Menu className="h-5 w-5" />
           )}
         </button>
+
+        <Link href="/" className="md:hidden flex items-center">
+          <BrandIcon size={28} />
+        </Link>
 
         <div className="flex items-center gap-2">
           <span className="hidden sm:inline-block text-xs font-semibold uppercase tracking-wider text-muted-foreground">

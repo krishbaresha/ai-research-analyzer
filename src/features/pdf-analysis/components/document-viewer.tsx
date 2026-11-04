@@ -12,11 +12,11 @@ import {
   ChevronLeft,
   ChevronRight,
   ExternalLink,
-  Sparkles,
   AlertCircle,
   BookOpen,
   MessageSquare,
 } from "lucide-react";
+import { BrandSymbol } from "@/components/brand/logo";
 import { ExtractedDocument } from "@/types/document";
 import { DocumentAnalysisReport } from "@/types/research";
 import {
@@ -324,7 +324,7 @@ export function DocumentViewer({
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-primary" />
+                <BrandSymbol size={16} className="text-primary" />
                 <CardTitle className="text-sm font-semibold">
                   {report ? "Re-Analyze Document" : "Evidence-Grounded Document Analysis"}
                 </CardTitle>
@@ -377,7 +377,7 @@ export function DocumentViewer({
                 disabled={isAnalyzing}
                 className="gap-2 text-xs"
               >
-                <Sparkles className="h-4 w-4" />
+                <BrandSymbol size={16} />
                 <span>{report ? "Re-Run Analysis" : "Generate Grounded Report"}</span>
               </Button>
             </div>

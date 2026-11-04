@@ -10,10 +10,17 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "AI Research Analyzer",
+  title: "AI Research Analyzer | Academic Intelligence Workspace",
   description:
     "Evidence-grounded academic research analyzer with server-side OpenAI Responses API inference and traceable document citations.",
-  keywords: ["research", "academic", "analysis", "openai", "pdf", "citations"],
+  keywords: ["research", "academic", "analysis", "openai", "pdf", "citations", "arxiv", "doi"],
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
+    ],
+    apple: [{ url: "/brand/logo-icon.jpg" }],
+  },
 };
 
 export const viewport: Viewport = {

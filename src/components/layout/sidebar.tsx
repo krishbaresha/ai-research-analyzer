@@ -7,12 +7,12 @@ import {
   Compass,
   PlusCircle,
   Settings,
-  Sparkles,
   Cpu,
   Layers,
   BookOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { BrandLogo } from "@/components/brand/logo";
 
 interface NavItem {
   title: string;
@@ -56,18 +56,10 @@ export function Sidebar({ className }: { className?: string }) {
       aria-label="Sidebar Navigation"
     >
       {/* Brand Header */}
-      <div className="flex h-16 items-center gap-3 border-b border-border px-5">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
-          <Sparkles className="h-5 w-5 text-amber-400" />
-        </div>
-        <div>
-          <div className="text-sm font-bold tracking-tight text-foreground">
-            Research Analyzer
-          </div>
-          <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-            Swiss Modernism 2.0
-          </div>
-        </div>
+      <div className="flex h-16 items-center border-b border-border px-5">
+        <Link href="/" className="hover:opacity-95 transition-opacity">
+          <BrandLogo size={36} />
+        </Link>
       </div>
 
       {/* Main Navigation Links */}

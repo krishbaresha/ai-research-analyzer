@@ -5,7 +5,6 @@ import { useSearchParams } from "next/navigation";
 import {
   Search,
   FileUp,
-  Sparkles,
   ShieldAlert,
   ArrowRight,
   FileText,
@@ -18,6 +17,7 @@ import {
   ExternalLink,
   Upload,
 } from "lucide-react";
+import { BrandSymbol } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -339,7 +339,7 @@ export default function NewResearchPage() {
       {/* Page Header */}
       <div>
         <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          <Sparkles className="h-3.5 w-3.5 text-primary" />
+          <BrandSymbol size={16} />
           <span>New Research Workspace</span>
         </div>
         <h2 className="text-2xl font-bold tracking-tight text-foreground mt-1">

@@ -3,7 +3,6 @@
 import * as React from "react";
 import {
   Send,
-  Sparkles,
   Bot,
   User,
   AlertCircle,
@@ -15,6 +14,7 @@ import {
   ShieldCheck,
   FileSearch,
 } from "lucide-react";
+import { BrandSymbol } from "@/components/brand/logo";
 import { ExtractedDocument } from "@/types/document";
 import {
   ChatMessage,
@@ -379,7 +379,7 @@ export function DocumentChat({ document, onSelectPage }: DocumentChatProps) {
               </div>
               <div className="max-w-[85%] rounded-lg p-3 bg-muted/40 border border-border text-foreground space-y-2">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Sparkles className="h-3.5 w-3.5 text-primary animate-pulse" />
+                  <BrandSymbol size={14} className="text-primary animate-pulse" />
                   <span>Searching extracted pages & synthesizing grounded answer...</span>
                 </div>
                 <div className="h-2 w-48 bg-primary/20 rounded animate-pulse" />
