@@ -104,6 +104,15 @@ describe("Source Resolver & Scholarly Adapters (Unit)", () => {
       expect(res.landingPageUrl).toBe("https://doi.org/10.1000/paywall123");
     });
 
+    it("identifies Google Books URLs and returns clear educational guidance", async () => {
+      const res = await resolveSource(
+        "https://books.google.com.pk/books?hl=en&lr=&id=yDQTDAAAQBAJ&oi=fnd&pg=PP1&dq=ai"
+      );
+      expect(res.detectedType).toBe("unsupported");
+      expect(res.fullTextAvailable).toBe(false);
+      expect(res.accessNote).toContain("Google Books links are copyright-protected web viewer pages");
+    });
+
     it("returns unsupported for invalid strings", async () => {
       const res = await resolveSource("not-a-url-or-doi");
       expect(res.detectedType).toBe("unsupported");

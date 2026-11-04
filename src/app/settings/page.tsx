@@ -3,7 +3,6 @@ import {
   ShieldCheck,
   HardDrive,
   CheckCircle2,
-  BookOpen,
 } from "lucide-react";
 import {
   Card,
@@ -112,52 +111,9 @@ export default function SettingsPage() {
         <ShieldCheck className="h-4 w-4" />
         <AlertTitle>Security Architecture Enforcement</AlertTitle>
         <AlertDescription className="text-xs leading-relaxed">
-          In accordance with ADR-002, <code>OPENAI_API_KEY</code> is never prefixed with{" "}
-          <code>NEXT_PUBLIC_</code>, never bundled into client scripts, and never printed in logs.
-          All inference calls pass exclusively through server-side provider modules.
+          <code>OPENAI_API_KEY</code> is strictly stored server-side, never bundled into client scripts, and never exposed in browser responses. All inference calls pass exclusively through server-side provider modules.
         </AlertDescription>
       </Alert>
-
-      {/* Architectural Documentation Directory References */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-semibold flex items-center gap-2">
-            <BookOpen className="h-4 w-4 text-primary" />
-            <span>Project Documentation Suite (`docs/`)</span>
-          </CardTitle>
-          <CardDescription className="text-xs">
-            Authoritative documentation files maintained in the workspace.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-            <div className="rounded border border-border p-3 space-y-1">
-              <div className="font-semibold text-foreground">ARCHITECTURE.md</div>
-              <p className="text-[11px] text-muted-foreground">
-                Provider abstraction, Swiss Modernism tokens, and security boundaries.
-              </p>
-            </div>
-            <div className="rounded border border-border p-3 space-y-1">
-              <div className="font-semibold text-foreground">API_SPECIFICATION.md</div>
-              <p className="text-[11px] text-muted-foreground">
-                REST contract, standard JSON response envelope, and error formats.
-              </p>
-            </div>
-            <div className="rounded border border-border p-3 space-y-1">
-              <div className="font-semibold text-foreground">DATABASE_SCHEMA.md</div>
-              <p className="text-[11px] text-muted-foreground">
-                Relational schema, ER diagram, and Row Level Security definitions.
-              </p>
-            </div>
-            <div className="rounded border border-border p-3 space-y-1">
-              <div className="font-semibold text-foreground">DECISIONS.md</div>
-              <p className="text-[11px] text-muted-foreground">
-                Architecture Decision Records (ADR-001 through ADR-007).
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

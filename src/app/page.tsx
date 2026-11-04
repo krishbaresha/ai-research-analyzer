@@ -4,19 +4,13 @@ import {
   Search,
   ArrowRight,
   FileSearch,
-  Info,
-  CheckCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BrandSymbol } from "@/components/brand/logo";
 import {
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function DashboardPage() {
   return (
@@ -60,84 +54,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* System State & Verification Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="border-border/80">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between text-xs uppercase tracking-wider text-muted-foreground">
-              <span>Inference Engine</span>
-              <Badge variant="outline" className="text-[10px] font-mono">Server-Side</Badge>
-            </div>
-            <CardTitle className="text-base font-semibold">OpenAI API Architecture</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-1.5 text-xs text-muted-foreground">
-            <div className="flex justify-between py-1 border-b border-border/50">
-              <span>Primary Engine</span>
-              <span className="font-mono font-medium text-foreground">Official OpenAI SDK</span>
-            </div>
-            <div className="flex justify-between py-1 border-b border-border/50">
-              <span>Configurable Model</span>
-              <span className="font-mono font-medium text-foreground">OPENAI_MODEL</span>
-            </div>
-            <div className="flex justify-between py-1">
-              <span>Key Confidentiality</span>
-              <span className="text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
-                <CheckCircle className="h-3 w-3" /> Zero Client Exposure
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-border/80">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between text-xs uppercase tracking-wider text-muted-foreground">
-              <span>Document Engine</span>
-              <Badge variant="outline" className="text-[10px]">Phase 3 Ready</Badge>
-            </div>
-            <CardTitle className="text-base font-semibold">PDF Text Extraction</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-1.5 text-xs text-muted-foreground">
-            <div className="flex justify-between py-1 border-b border-border/50">
-              <span>Boundary Mapping</span>
-              <span className="font-medium text-foreground">Page-Level Accuracy</span>
-            </div>
-            <div className="flex justify-between py-1 border-b border-border/50">
-              <span>Anti-Injection</span>
-              <span className="font-medium text-foreground">Structural XML Fencing</span>
-            </div>
-            <div className="flex justify-between py-1">
-              <span>Scanned Fallback</span>
-              <span className="font-medium text-foreground">Honest OCR Disclaimers</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-border/80">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between text-xs uppercase tracking-wider text-muted-foreground">
-              <span>Trust & Grounding</span>
-              <Badge variant="outline" className="text-[10px]">Contract v1</Badge>
-            </div>
-            <CardTitle className="text-base font-semibold">Evidence Categorization</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-1.5 text-xs text-muted-foreground">
-            <div className="flex justify-between items-center py-1 border-b border-border/50">
-              <span>Document Quotes</span>
-              <Badge variant="from_document" className="text-[10px]">from_document</Badge>
-            </div>
-            <div className="flex justify-between items-center py-1 border-b border-border/50">
-              <span>AI Syntheses</span>
-              <Badge variant="ai_interpretation" className="text-[10px]">ai_interpretation</Badge>
-            </div>
-            <div className="flex justify-between items-center py-1">
-              <span>Missing Points</span>
-              <Badge variant="not_established" className="text-[10px]">not_established</Badge>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Recent Projects — Intentional Empty State (No Fabricated Data) */}
+      {/* Recent Projects */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
@@ -188,15 +105,6 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Architectural Guidelines Note */}
-      <Alert variant="info" className="border-border">
-        <Info className="h-4 w-4" />
-        <AlertTitle>Phase 5 Active: Document Chat & Multi-Source Paper Import</AlertTitle>
-        <AlertDescription className="text-xs leading-relaxed">
-          Grounded Document Chat, deterministic BM25 passage retrieval, and multi-source paper import (local PDF upload, arXiv URLs/IDs, DOIs via Crossref/OpenAlex, and SSRF-hardened direct URLs) are active. Ingest papers in the New Research workspace or explore your Research Library.
-        </AlertDescription>
-      </Alert>
     </div>
   );
 }

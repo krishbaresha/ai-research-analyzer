@@ -105,7 +105,21 @@ export async function resolveSource(rawInput: string): Promise<SourceResolutionR
     };
   }
 
-  // 3. Detect direct PDF URL
+  // 3. Detect Google Books URLs (web viewer pages with DRM/copyrighted HTML)
+  if (/books\.google\.[a-z.]+/i.test(trimmed)) {
+    return {
+      detectedType: "unsupported",
+      normalizedIdentifier: trimmed,
+      rawInput: trimmed,
+      isOpenAccess: false,
+      fullTextAvailable: false,
+      landingPageUrl: trimmed,
+      accessNote:
+        "Google Books links are copyright-protected web viewer pages, not downloadable PDF documents. To analyze this book, please upload the PDF/chapter file directly via 'Local PDF Upload', or explore the topic using 'Topic-Based Analysis'.",
+    };
+  }
+
+  // 4. Detect direct PDF URL
   if (DIRECT_PDF_URL_REGEX.test(trimmed)) {
     // Generate clean title guess from URL basename
     let guessedTitle: string | undefined;

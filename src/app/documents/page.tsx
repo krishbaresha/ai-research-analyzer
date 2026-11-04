@@ -112,17 +112,6 @@ export default function ResearchLibraryPage() {
         </Link>
       </div>
 
-      {/* Ephemeral In-Memory Storage Banner */}
-      <Alert variant="default" className="border-border bg-card">
-        <Info className="h-4 w-4 text-primary" />
-        <AlertTitle className="text-xs font-bold text-foreground">
-          In-Memory Research Store (Phase 5 MVP)
-        </AlertTitle>
-        <AlertDescription className="text-xs text-muted-foreground leading-relaxed mt-1">
-          Papers in this library are stored in ephemeral server memory adhering to ADR-004. Persistent database storage (PostgreSQL / Supabase) and long-term project workspaces will be introduced in Phase 6.
-        </AlertDescription>
-      </Alert>
-
       {/* Search and Filters Bar */}
       <form onSubmit={handleSearchSubmit} className="flex gap-2">
         <div className="relative flex-1">

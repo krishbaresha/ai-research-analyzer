@@ -9,7 +9,6 @@ import {
   ArrowRight,
   FileText,
   AlertCircle,
-  Key,
   CheckCircle,
   X,
   Globe,
@@ -390,131 +389,100 @@ export default function NewResearchPage() {
 
       {/* Tab 1: Topic-Based Investigation */}
       {activeMode === "topic" && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-4">
-            <Card>
-              <form onSubmit={handleTopicSubmit}>
-                <CardHeader>
-                  <CardTitle className="text-base font-semibold">
-                    Research Topic & Question
-                  </CardTitle>
-                  <CardDescription className="text-xs">
-                    Define the core research question, domain, and scope parameters for structured synthesis.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <Textarea
-                    label="Research Question / Topic"
-                    placeholder="e.g. How do transformer attention mechanisms compare to state space models (Mamba) in processing long-context scientific papers?"
-                    value={topic}
-                    disabled={isLoading}
-                    onChange={(e) => {
-                      setTopic(e.target.value);
-                      if (validationError) setValidationError(null);
-                      if (apiError) setApiError(null);
-                    }}
-                    error={validationError || undefined}
-                    helperText="Formulate an inquiry with sufficient specificity for nuanced findings."
-                    className="min-h-[120px]"
-                  />
+        <div className="max-w-3xl space-y-4">
+          <Card>
+            <form onSubmit={handleTopicSubmit}>
+              <CardHeader>
+                <CardTitle className="text-base font-semibold">
+                  Research Topic & Question
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  Define the core research question, domain, and scope parameters for structured synthesis.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Textarea
+                  label="Research Question / Topic"
+                  placeholder="e.g. How do transformer attention mechanisms compare to state space models (Mamba) in processing long-context scientific papers?"
+                  value={topic}
+                  disabled={isLoading}
+                  onChange={(e) => {
+                    setTopic(e.target.value);
+                    if (validationError) setValidationError(null);
+                    if (apiError) setApiError(null);
+                  }}
+                  error={validationError || undefined}
+                  helperText="Formulate an inquiry with sufficient specificity for nuanced findings."
+                  className="min-h-[120px]"
+                />
 
-                  <Input
-                    label="Scope / Key Constraints (Optional)"
-                    placeholder="e.g. Focus on computational complexity, memory usage, and benchmark datasets from 2023-2025"
-                    value={scope}
-                    disabled={isLoading}
-                    onChange={(e) => setScope(e.target.value)}
-                    helperText="Specify boundaries, time horizons, or domains of interest."
-                  />
+                <Input
+                  label="Scope / Key Constraints (Optional)"
+                  placeholder="e.g. Focus on computational complexity, memory usage, and benchmark datasets from 2023-2025"
+                  value={scope}
+                  disabled={isLoading}
+                  onChange={(e) => setScope(e.target.value)}
+                  helperText="Specify boundaries, time horizons, or domains of interest."
+                />
 
-                  {/* API Error Notification */}
-                  {apiError && (
-                    <Alert
-                      variant={
-                        apiError.code === "AI_AUTH_ERROR"
-                          ? "warning"
-                          : apiError.code === "AI_RATE_LIMIT" || apiError.code === "AI_QUOTA_EXCEEDED"
-                          ? "destructive"
-                          : "default"
-                      }
-                    >
-                      <AlertCircle className="h-4 w-4" />
-                      <AlertTitle className="text-xs font-bold">
-                        {apiError.code === "AI_AUTH_ERROR"
-                          ? "OpenAI Authentication Required"
-                          : apiError.code === "AI_RATE_LIMIT"
-                          ? "Rate Limit Exceeded"
-                          : apiError.code === "AI_QUOTA_EXCEEDED"
-                          ? "Quota Limit Reached"
-                          : "Inference Error"}
-                      </AlertTitle>
-                      <AlertDescription className="text-xs leading-relaxed mt-1">
-                        {apiError.message}
-                      </AlertDescription>
-                    </Alert>
-                  )}
-
-                  {/* Loading Feedback Indicator */}
-                  {isLoading && (
-                    <div className="rounded-lg border border-border bg-card p-4 space-y-3">
-                      <div className="flex items-center gap-2 text-xs font-semibold text-primary">
-                        <span className="h-2 w-2 rounded-full bg-primary animate-ping" />
-                        <span>{loadingStep}</span>
-                      </div>
-                      <div className="space-y-2">
-                        <Skeleton className="h-4 w-3/4" />
-                        <Skeleton className="h-4 w-1/2" />
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-
-                <CardFooter className="flex justify-between border-t border-border pt-4">
-                  <span className="text-xs text-muted-foreground">
-                    Engine: <strong className="text-foreground">OpenAI Responses API</strong>
-                  </span>
-                  <Button
-                    type="submit"
-                    isLoading={isLoading}
-                    disabled={isLoading}
-                    className="gap-2 text-xs"
+                {/* API Error Notification */}
+                {apiError && (
+                  <Alert
+                    variant={
+                      apiError.code === "AI_AUTH_ERROR"
+                        ? "warning"
+                        : apiError.code === "AI_RATE_LIMIT" || apiError.code === "AI_QUOTA_EXCEEDED"
+                        ? "destructive"
+                        : "default"
+                    }
                   >
-                    <span>Analyze Topic</span>
-                    <ArrowRight className="h-3.5 w-3.5" />
-                  </Button>
-                </CardFooter>
-              </form>
-            </Card>
-          </div>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle className="text-xs font-bold">
+                      {apiError.code === "AI_AUTH_ERROR"
+                        ? "OpenAI Authentication Required"
+                        : apiError.code === "AI_RATE_LIMIT"
+                        ? "Rate Limit Exceeded"
+                        : apiError.code === "AI_QUOTA_EXCEEDED"
+                        ? "Quota Limit Reached"
+                        : "Inference Error"}
+                    </AlertTitle>
+                    <AlertDescription className="text-xs leading-relaxed mt-1">
+                      {apiError.message}
+                    </AlertDescription>
+                  </Alert>
+                )}
 
-          <div className="space-y-4">
-            <Card className="border-border/80">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-xs font-semibold text-foreground">
-                  Traceable Evidence Standards
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="text-xs text-muted-foreground leading-relaxed">
-                Claims generated during topic research are explicitly labeled as{" "}
-                <Badge variant="outline" className="text-[10px] font-mono">
-                  ai_interpretation
-                </Badge>{" "}
-                to make clear that topic analysis is model-generated background analysis, not live web research or verified empirical findings.
+                {/* Loading Feedback Indicator */}
+                {isLoading && (
+                  <div className="rounded-lg border border-border bg-card p-4 space-y-3">
+                    <div className="flex items-center gap-2 text-xs font-semibold text-primary">
+                      <span className="h-2 w-2 rounded-full bg-primary animate-ping" />
+                      <span>{loadingStep}</span>
+                    </div>
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-3/4" />
+                      <Skeleton className="h-4 w-1/2" />
+                    </div>
+                  </div>
+                )}
               </CardContent>
-            </Card>
 
-            <Card className="border-border/80">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-xs font-semibold flex items-center gap-1.5 text-foreground">
-                  <Key className="h-3.5 w-3.5 text-emerald-600" />
-                  <span>Security Guarantee</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="text-xs text-muted-foreground leading-relaxed">
-                OpenAI API keys remain strictly on the server. No secrets are ever exposed to client bundles or browser responses.
-              </CardContent>
-            </Card>
-          </div>
+              <CardFooter className="flex justify-between border-t border-border pt-4">
+                <span className="text-xs text-muted-foreground">
+                  Engine: <strong className="text-foreground">OpenAI Responses API</strong>
+                </span>
+                <Button
+                  type="submit"
+                  isLoading={isLoading}
+                  disabled={isLoading}
+                  className="gap-2 text-xs"
+                >
+                  <span>Analyze Topic</span>
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Button>
+              </CardFooter>
+            </form>
+          </Card>
         </div>
       )}
 
