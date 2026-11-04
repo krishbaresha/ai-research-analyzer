@@ -63,6 +63,35 @@ describe("Document Report Parser & Schema Validator (Unit)", () => {
     ).toThrow(AIResponseParseError);
   });
 
+  it("coerces researchObjectives flexibly when LLM provides goal, description, or string array", () => {
+    const reportWithAltObjectives = {
+      ...mockReport,
+      researchObjectives: [
+        { goal: "Evaluate sparse attention mechanism", pageReferences: [1] },
+        { description: "Measure latency on GPU clusters", pageReferences: "2" },
+        "Investigate generalization on unseen scientific domains",
+      ],
+    };
+
+    const parsed = parseAndValidateDocumentReport(
+      JSON.stringify(reportWithAltObjectives),
+      "gpt-4o-mini",
+      "doc_test_456",
+      dummyBudgeted,
+      "paper.pdf",
+      500
+    );
+
+    expect(parsed.researchObjectives).toHaveLength(3);
+    expect(parsed.researchObjectives[0].objective).toBe("Evaluate sparse attention mechanism");
+    expect(parsed.researchObjectives[0].pageReferences).toEqual([1]);
+    expect(parsed.researchObjectives[1].objective).toBe("Measure latency on GPU clusters");
+    expect(parsed.researchObjectives[1].pageReferences).toEqual([2]);
+    expect(parsed.researchObjectives[2].objective).toBe(
+      "Investigate generalization on unseen scientific domains"
+    );
+  });
+
   it("throws AIResponseParseError when required fields are missing", () => {
     const incomplete = {
       title: "Incomplete",
