@@ -15,6 +15,7 @@ import {
   HelpCircle,
   FileQuestion,
   Download,
+  FileText,
 } from "lucide-react";
 import { ResearchReport } from "@/types/research";
 import {
@@ -99,6 +100,70 @@ ${followUpsText}
     document.title = originalTitle;
   };
 
+  const handleDownloadWord = () => {
+    const cleanTitle = (report.title || "Topic-Research-Report")
+      .replace(/[^a-zA-Z0-9_-]+/g, "_")
+      .slice(0, 60);
+
+    const docHtml = `
+      <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+      <head>
+        <meta charset='utf-8'>
+        <title>${report.title}</title>
+        <style>
+          body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; line-height: 1.5; color: #1e293b; margin: 30px; }
+          h1 { color: #1e3a8a; font-size: 20pt; border-bottom: 2px solid #1e3a8a; padding-bottom: 6px; margin-bottom: 15px; }
+          h2 { color: #0f172a; font-size: 14pt; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; margin-top: 20px; }
+          p { margin: 6px 0; }
+          .meta-box { background: #f1f5f9; border-left: 4px solid #2563eb; padding: 10px 14px; margin-bottom: 20px; font-size: 10pt; }
+          ul, ol { margin: 6px 0 12px 20px; }
+          li { margin-bottom: 4px; }
+        </style>
+      </head>
+      <body>
+        <h1>${report.title}</h1>
+        <div class="meta-box">
+          <p><strong>Research Inquiry:</strong> ${report.researchQuestion}</p>
+          <p><strong>Scope:</strong> ${report.scope || "General Academic Literature"}</p>
+          <p><strong>Attribution:</strong> ${report.evidenceStatus} | <strong>Model:</strong> ${report.modelId} | <strong>Date:</strong> ${formatDate(report.createdAt)}</p>
+        </div>
+
+        <h2>Executive Summary</h2>
+        <p>${report.executiveSummary.replace(/\n\n/g, "</p><p>")}</p>
+
+        <h2>Key Findings</h2>
+        <ul>
+          ${report.keyFindings.map((f, i) => `<li><strong>${i + 1}. ${f.finding}</strong></li>`).join("")}
+        </ul>
+
+        <h2>Strengths & Limitations</h2>
+        <p><strong>Strengths:</strong></p>
+        <ul>${report.strengths.map((s) => `<li>${s}</li>`).join("")}</ul>
+        <p><strong>Limitations:</strong></p>
+        <ul>${report.limitations.map((l) => `<li>${l}</li>`).join("")}</ul>
+        <p><strong>Research Gaps:</strong></p>
+        <ul>${report.researchGaps.map((g) => `<li>${g}</li>`).join("")}</ul>
+
+        <h2>Conclusion</h2>
+        <p>${report.conclusion}</p>
+
+        <h2>Suggested Follow-up Questions</h2>
+        <ol>${report.suggestedFollowUps.map((q) => `<li>${q}</li>`).join("")}</ol>
+      </body>
+      </html>
+    `;
+
+    const blob = new Blob(["\ufeff" + docHtml], { type: "application/msword" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${cleanTitle}_Report.doc`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       {/* Report Header Card */}
@@ -144,7 +209,7 @@ ${followUpsText}
           <div className="text-xs text-muted-foreground">
             All analytical claims are labelled according to evidence boundaries.
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -153,6 +218,15 @@ ${followUpsText}
             >
               <Download className="h-3.5 w-3.5" />
               <span>Download PDF</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDownloadWord}
+              className="gap-1.5 text-xs text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-950/30 cursor-pointer"
+            >
+              <FileText className="h-3.5 w-3.5" />
+              <span>Download Word</span>
             </Button>
             <Button
               variant="outline"

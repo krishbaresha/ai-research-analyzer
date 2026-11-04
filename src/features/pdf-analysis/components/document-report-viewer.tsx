@@ -131,6 +131,99 @@ ${report.suggestedFurtherResearch.map((r, i) => `${i + 1}. ${r}`).join("\n")}
     document.title = originalTitle;
   };
 
+  const handleDownloadWord = () => {
+    const cleanTitle = (overview.title || "Research-Analysis-Report")
+      .replace(/[^a-zA-Z0-9_-]+/g, "_")
+      .slice(0, 60);
+
+    const docHtml = `
+      <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+      <head>
+        <meta charset='utf-8'>
+        <title>${overview.title}</title>
+        <style>
+          body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; line-height: 1.5; color: #1e293b; margin: 30px; }
+          h1 { color: #1e3a8a; font-size: 20pt; border-bottom: 2px solid #1e3a8a; padding-bottom: 6px; margin-bottom: 15px; }
+          h2 { color: #0f172a; font-size: 14pt; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; margin-top: 20px; }
+          h3 { color: #1e40af; font-size: 12pt; margin-top: 14px; }
+          p { margin: 6px 0; }
+          .meta-box { background: #f1f5f9; border-left: 4px solid #2563eb; padding: 10px 14px; margin-bottom: 20px; font-size: 10pt; }
+          .citation-badge { background: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 3px; font-family: monospace; font-size: 9pt; }
+          .quote-box { background: #f8fafc; border-left: 3px solid #10b981; padding: 6px 12px; margin: 6px 0; font-style: italic; color: #334155; }
+          ul, ol { margin: 6px 0 12px 20px; }
+          li { margin-bottom: 4px; }
+        </style>
+      </head>
+      <body>
+        <h1>${overview.title}</h1>
+        <div class="meta-box">
+          <p><strong>Document:</strong> ${overview.originalFilename}</p>
+          <p><strong>Analyzed Coverage:</strong> ${overview.analyzedPages.join(", ")} of ${overview.totalPages} pages (${overview.coveragePercentage}% full-text coverage)</p>
+          <p><strong>Model:</strong> ${report.modelId} | <strong>Date:</strong> ${report.generatedAt}</p>
+        </div>
+
+        <h2>Executive Summary</h2>
+        <p>${report.executiveSummary.replace(/\n\n/g, "</p><p>")}</p>
+
+        <h2>Research Objectives</h2>
+        <ul>
+          ${report.researchObjectives.map((o) => `<li><strong>${o.objective}</strong> <span class="citation-badge">[Page ${o.pageReferences?.join(", ") || "N/A"}]</span></li>`).join("")}
+        </ul>
+
+        <h2>Key Findings</h2>
+        ${report.keyFindings.map((f, i) => `
+          <div style="margin-bottom: 10px;">
+            <p><strong>${i + 1}. ${f.finding}</strong> <span class="citation-badge">[Page ${f.pageReferences?.join(", ") || "N/A"}]</span></p>
+            ${f.quote ? `<div class="quote-box">&ldquo;${f.quote}&rdquo;</div>` : ""}
+          </div>
+        `).join("")}
+
+        <h2>Methodology Assessment</h2>
+        <p><strong>Approach:</strong> ${report.methodologyAssessment.approach}</p>
+        <p><strong>Datasets:</strong> ${report.methodologyAssessment.datasetsUsed.join(", ") || "None listed"}</p>
+        <p><strong>Baselines:</strong> ${report.methodologyAssessment.baselines.join(", ") || "None listed"}</p>
+        <p><strong>Evaluation Metrics:</strong> ${report.methodologyAssessment.evaluationMetrics.join(", ") || "None listed"}</p>
+        <p><strong>Rigor:</strong> ${report.methodologyAssessment.methodologicalRigor}</p>
+
+        <h2>Detailed Analysis</h2>
+        ${report.detailedAnalysis.map((s) => `
+          <h3>${s.heading} <span class="citation-badge">[Page ${s.pageReferences?.join(", ") || "N/A"}]</span></h3>
+          <p>${s.content.replace(/\n\n/g, "</p><p>")}</p>
+        `).join("")}
+
+        <h2>Important Concepts</h2>
+        <ul>
+          ${report.importantConcepts.map((c) => `<li><strong>${c.term}</strong> <span class="citation-badge">[p. ${c.pageReferences?.join(", ") || "N/A"}]</span>: ${c.definition}</li>`).join("")}
+        </ul>
+
+        <h2>Strengths & Limitations</h2>
+        <p><strong>Empirical Strengths:</strong></p>
+        <ul>${report.strengths.map((s) => `<li>${s}</li>`).join("")}</ul>
+        <p><strong>Limitations:</strong></p>
+        <ul>${report.limitations.map((l) => `<li>${l}</li>`).join("")}</ul>
+        <p><strong>Identified Research Gaps:</strong></p>
+        <ul>${report.researchGaps.map((g) => `<li>${g}</li>`).join("")}</ul>
+
+        <h2>Conclusion</h2>
+        <p>${report.conclusion}</p>
+
+        <h2>Suggested Further Research</h2>
+        <ol>${report.suggestedFurtherResearch.map((r) => `<li>${r}</li>`).join("")}</ol>
+      </body>
+      </html>
+    `;
+
+    const blob = new Blob(["\ufeff" + docHtml], { type: "application/msword" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${cleanTitle}_Report.doc`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   const renderCitationPill = (pages?: number[]) => {
     if (!pages || pages.length === 0) return null;
 
@@ -172,7 +265,7 @@ ${report.suggestedFurtherResearch.map((r, i) => `${i + 1}. ${r}`).join("\n")}
                 </Badge>
               )}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
@@ -181,6 +274,15 @@ ${report.suggestedFurtherResearch.map((r, i) => `${i + 1}. ${r}`).join("\n")}
               >
                 <Download className="h-3.5 w-3.5" />
                 <span>Download PDF</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDownloadWord}
+                className="gap-1.5 text-xs h-8 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-950/30"
+              >
+                <FileText className="h-3.5 w-3.5" />
+                <span>Download Word</span>
               </Button>
               <Button
                 variant="outline"

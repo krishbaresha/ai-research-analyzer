@@ -173,11 +173,11 @@ describe("Phase 4 Comprehensive QA Audit Suite", () => {
     });
   });
 
-  describe("3. Long Document Budgeting (>60,000 Chars) & Strategic Sampling", () => {
-    it("correctly triggers strategic sampling when total text exceeds 60,000 characters", () => {
+  describe("3. Long Document Budgeting (> DEFAULT_MAX_CHAR_BUDGET) & Strategic Sampling", () => {
+    it("correctly triggers strategic sampling when total text exceeds context character budget", () => {
       const pages: ExtractedPage[] = [];
-      // Create 30 pages of 3,000 characters each = 90,000 characters (> 60,000 budget)
-      for (let i = 1; i <= 30; i++) {
+      // Create 100 pages of 3,000 characters each = 300,000 characters (> 250,000 budget)
+      for (let i = 1; i <= 100; i++) {
         pages.push({
           pageNumber: i,
           text: `Page ${i} content `.repeat(200),
@@ -192,10 +192,10 @@ describe("Phase 4 Comprehensive QA Audit Suite", () => {
           originalFilename: "long_thesis.pdf",
           sanitizedFilename: "long_thesis.pdf",
           mimeType: "application/pdf",
-          fileSizeBytes: 200000,
-          pageCount: 30,
-          totalWordCount: 12000,
-          totalCharCount: 90000,
+          fileSizeBytes: 600000,
+          pageCount: 100,
+          totalWordCount: 40000,
+          totalCharCount: 300000,
           isScanned: false,
           ocrRequired: false,
           isEncrypted: false,
@@ -217,9 +217,9 @@ describe("Phase 4 Comprehensive QA Audit Suite", () => {
       expect(budgeted.analyzedPages).toContain(2);
       expect(budgeted.analyzedPages).toContain(3);
 
-      // Concluding pages (29, 30) must be included
-      expect(budgeted.analyzedPages).toContain(29);
-      expect(budgeted.analyzedPages).toContain(30);
+      // Concluding pages (99, 100) must be included
+      expect(budgeted.analyzedPages).toContain(99);
+      expect(budgeted.analyzedPages).toContain(100);
 
       // Coverage note must transparently communicate partial coverage
       expect(budgeted.coverageNote).toContain("Analyzed");

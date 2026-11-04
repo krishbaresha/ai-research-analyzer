@@ -19,10 +19,10 @@ export interface BudgetedDocument {
 
 /**
  * Maximum character budget for document prompt ingestion.
- * 60,000 characters is ~15,000 tokens, providing high-fidelity coverage
- * while avoiding latency bottlenecks or context degradation.
+ * 250,000 characters is ~60,000 tokens, providing complete 100% full-text coverage
+ * for standard academic papers (up to 40+ pages) within gpt-4o-mini's 128k context window.
  */
-export const DEFAULT_MAX_CHAR_BUDGET = 60000;
+export const DEFAULT_MAX_CHAR_BUDGET = 250000;
 
 /**
  * Sanitizes passage text to prevent XML delimiter collision and prompt injection.
