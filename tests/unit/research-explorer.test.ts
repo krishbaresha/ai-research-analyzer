@@ -264,6 +264,39 @@ describe("Research Explorer Parser & Schema Validator (Unit)", () => {
     expect(result.identity.title).toBe(validExplorerPayload.identity.title);
   });
 
+  it("coerces raw string array for workflowDiagrams steps into structured step objects", () => {
+    const payloadWithRawStepStrings = {
+      ...validExplorerPayload,
+      workflowDiagrams: [
+        {
+          id: "diag-raw",
+          title: "Raw Step Diagram",
+          diagramType: "pipeline",
+          caption: "Pipeline test",
+          sourcePage: 1,
+          steps: [
+            "Data Extraction: Parse PDF pages into memory",
+            "Embedding Generation: Pass passages to model",
+            "Evaluation: Benchmark against ground truth",
+          ],
+        },
+      ],
+    };
+
+    const rawJson = JSON.stringify(payloadWithRawStepStrings);
+    const result = parseAndValidateResearchExplorer(
+      rawJson,
+      "gpt-4o-mini",
+      dummyDocument.metadata.id,
+      dummyDocument.metadata
+    );
+
+    expect(result.workflowDiagrams[0].steps).toHaveLength(3);
+    expect(result.workflowDiagrams[0].steps[0].title).toBe("Data Extraction");
+    expect(result.workflowDiagrams[0].steps[0].stepNumber).toBe(1);
+    expect(result.workflowDiagrams[0].steps[1].stepNumber).toBe(2);
+  });
+
   it("throws AIResponseParseError when input is completely unparseable", () => {
     expect(() =>
       parseAndValidateResearchExplorer("Not JSON at all", "gpt-4o-mini", dummyDocument.metadata.id, dummyDocument.metadata)

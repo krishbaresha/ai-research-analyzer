@@ -201,21 +201,69 @@ export const reconstructedChartSchema = z.preprocess(
   })
 );
 
-export const workflowStepSchema = z.object({
-  stepNumber: z.number().int().default(1),
-  title: z.string().min(1).default("Process Step"),
-  description: z.string().default(""),
-  technicalNote: z.string().nullish(),
-  pageReference: z.number().nullish(),
-});
+export const workflowStepSchema = z.preprocess(
+  (val: unknown) => {
+    if (typeof val === "string") {
+      const parts = val.split(/[:.-]/);
+      const title = parts.length > 1 ? parts[0].trim() : val.slice(0, 60);
+      return {
+        stepNumber: 1,
+        title: title || "Process Step",
+        description: val,
+        technicalNote: undefined,
+        pageReference: undefined,
+      };
+    }
+    if (typeof val === "object" && val !== null) {
+      const obj = val as Record<string, unknown>;
+      const stepNum = typeof obj.stepNumber === "number" ? obj.stepNumber : parseInt(String(obj.stepNumber || obj.step || 1), 10);
+      return {
+        stepNumber: isNaN(stepNum) ? 1 : stepNum,
+        title: typeof obj.title === "string" && obj.title.trim() ? obj.title.trim() : typeof obj.name === "string" ? obj.name : "Process Step",
+        description: typeof obj.description === "string" ? obj.description : typeof obj.detail === "string" ? obj.detail : String(obj.title || ""),
+        technicalNote: typeof obj.technicalNote === "string" ? obj.technicalNote : undefined,
+        pageReference: typeof obj.pageReference === "number" ? obj.pageReference : undefined,
+      };
+    }
+    return val;
+  },
+  z.object({
+    stepNumber: z.number().int().default(1),
+    title: z.string().min(1).default("Process Step"),
+    description: z.string().default(""),
+    technicalNote: z.string().nullish(),
+    pageReference: z.number().nullish(),
+  })
+);
 
 export const workflowDiagramSchema = z.preprocess(
   (val: unknown) => {
     if (typeof val === "object" && val !== null) {
       const obj = val as Record<string, unknown>;
+      let rawSteps = Array.isArray(obj.steps) ? obj.steps : [];
+      rawSteps = rawSteps.map((s, idx) => {
+        if (typeof s === "string") {
+          const parts = s.split(/[:.-]/);
+          const title = parts.length > 1 && parts[0].length < 40 ? parts[0].trim() : `Step ${idx + 1}`;
+          return {
+            stepNumber: idx + 1,
+            title,
+            description: s,
+          };
+        }
+        if (typeof s === "object" && s !== null) {
+          const sObj = s as Record<string, unknown>;
+          return {
+            ...sObj,
+            stepNumber: typeof sObj.stepNumber === "number" ? sObj.stepNumber : idx + 1,
+          };
+        }
+        return s;
+      });
       return {
         ...obj,
         caption: typeof obj.caption === "string" && obj.caption.trim() ? obj.caption.trim() : "Synthesized research execution flow.",
+        steps: rawSteps,
       };
     }
     return val;

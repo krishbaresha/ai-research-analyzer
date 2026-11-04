@@ -104,10 +104,10 @@ Generate a pure JSON output with these top-level keys:
     20. Reproducibility & Open Science (cluster: "evaluation")
     21. Theoretical & Practical Implications (cluster: "impact")
     22. Future Research Directions (cluster: "impact")
-- reconstructedCharts: Array of charts reconstructed from reported numerical benchmark data (if numbers exist, else empty array)
-- workflowDiagrams: Array of methodology pipeline diagrams with step-by-step stages and page anchors
+- reconstructedCharts: Array of charts reconstructed from reported numerical benchmark data (if numbers exist, else empty array). Schema: [{ id, title, chartType: "bar"|"line"|"comparison", xAxisLabel, yAxisLabel, unit, sourceTableOrSection, pageNumber: 1, caption, data: [{ category, value, isProposed, baseline }] }]
+- workflowDiagrams: Array of methodology pipeline diagrams with step-by-step stages. Schema: [{ id, title, diagramType: "pipeline"|"architecture"|"concept_map", caption, sourcePage: 1, steps: [{ stepNumber: 1, title: "Step Title", description: "Detailed description", pageReference: 1 }] }]
 - glossary: Array of 4-8 technical terms with { term, plainDefinition, technicalDefinition, analogy, pageReferences: [] }
-- keyCitations: Array of 3-6 influential cited works or baselines
+- keyCitations: Array of 3-6 influential cited works with { citationText, relevance, isBaseline: false, pageReferences: [] }
 
 Remember: Pure parseable JSON only. All claims must cite real page numbers from the provided passages.
 `.trim();
