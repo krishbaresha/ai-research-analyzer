@@ -15,6 +15,7 @@ import {
   HelpCircle,
   FileText,
   ShieldCheck,
+  Download,
 } from "lucide-react";
 import { DocumentAnalysisReport } from "@/types/research";
 import {
@@ -120,6 +121,16 @@ ${report.suggestedFurtherResearch.map((r, i) => `${i + 1}. ${r}`).join("\n")}
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handlePrintPdf = () => {
+    const originalTitle = document.title;
+    const cleanTitle = (overview.title || "Research-Analysis-Report")
+      .replace(/[^a-zA-Z0-9_-]+/g, "_")
+      .slice(0, 60);
+    document.title = `${cleanTitle}_Analysis_Report`;
+    window.print();
+    document.title = originalTitle;
+  };
+
   const renderCitationPill = (pages?: number[]) => {
     if (!pages || pages.length === 0) return null;
 
@@ -161,24 +172,35 @@ ${report.suggestedFurtherResearch.map((r, i) => `${i + 1}. ${r}`).join("\n")}
                 </Badge>
               )}
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleCopyMarkdown}
-              className="gap-1.5 text-xs h-8"
-            >
-              {copied ? (
-                <>
-                  <Check className="h-3.5 w-3.5 text-emerald-600" />
-                  <span>Copied Report</span>
-                </>
-              ) : (
-                <>
-                  <Copy className="h-3.5 w-3.5" />
-                  <span>Copy Markdown</span>
-                </>
-              )}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePrintPdf}
+                className="gap-1.5 text-xs h-8 text-primary border-primary/30 hover:bg-primary/10"
+              >
+                <Download className="h-3.5 w-3.5" />
+                <span>Download PDF</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCopyMarkdown}
+                className="gap-1.5 text-xs h-8"
+              >
+                {copied ? (
+                  <>
+                    <Check className="h-3.5 w-3.5 text-emerald-600" />
+                    <span>Copied Report</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-3.5 w-3.5" />
+                    <span>Copy Markdown</span>
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
           <CardTitle className="text-xl font-bold tracking-tight text-foreground mt-2">
             {overview.title}

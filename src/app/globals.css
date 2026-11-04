@@ -88,3 +88,53 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Publication-Ready Print & PDF Export Stylesheet
+   --------------------------------------------------------------------------- */
+@media print {
+  /* Hide non-report chrome, navigation, buttons, and sidebars */
+  aside,
+  header,
+  nav,
+  .no-print,
+  button,
+  input,
+  textarea,
+  [role="tablist"] {
+    display: none !important;
+  }
+
+  /* Ensure body and main take full width with crisp typography */
+  body,
+  main,
+  #root,
+  #__next {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+    font-size: 10.5pt !important;
+    line-height: 1.5 !important;
+  }
+
+  /* Avoid awkward page splits inside structured analytical sections */
+  .space-y-6 > * {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    margin-bottom: 1.25rem !important;
+  }
+
+  /* Clean academic borders without heavy web shadows */
+  [class*="border"] {
+    border-color: #cbd5e1 !important;
+    box-shadow: none !important;
+  }
+
+  /* Standard print page margin */
+  @page {
+    margin: 1.5cm;
+    size: A4 portrait;
+  }
+}

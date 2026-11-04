@@ -14,6 +14,7 @@ import {
   Calendar,
   HelpCircle,
   FileQuestion,
+  Download,
 } from "lucide-react";
 import { ResearchReport } from "@/types/research";
 import {
@@ -88,6 +89,16 @@ ${followUpsText}
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handlePrintPdf = () => {
+    const originalTitle = document.title;
+    const cleanTitle = (report.title || "Topic-Research-Report")
+      .replace(/[^a-zA-Z0-9_-]+/g, "_")
+      .slice(0, 60);
+    document.title = `${cleanTitle}_Research_Report`;
+    window.print();
+    document.title = originalTitle;
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       {/* Report Header Card */}
@@ -134,6 +145,15 @@ ${followUpsText}
             All analytical claims are labelled according to evidence boundaries.
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handlePrintPdf}
+              className="gap-1.5 text-xs text-primary border-primary/30 hover:bg-primary/10 cursor-pointer"
+            >
+              <Download className="h-3.5 w-3.5" />
+              <span>Download PDF</span>
+            </Button>
             <Button
               variant="outline"
               size="sm"
