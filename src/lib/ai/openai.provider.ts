@@ -25,7 +25,13 @@ import {
   parseAndValidateChatResponse,
 } from "./parsers";
 import { ResearchReport, DocumentAnalysisReport } from "@/types/research";
+import { ResearchExplorerData } from "@/types/research-explorer";
 import { ChatAssistantMessage } from "@/types/chat";
+import {
+  RESEARCH_EXPLORER_SYSTEM_INSTRUCTION,
+  buildResearchExplorerPrompt,
+} from "./explorer-prompts";
+import { parseAndValidateResearchExplorer } from "./explorer-parsers";
 import { budgetDocumentPages } from "../pdf/budgeter";
 import { getServerConfig } from "../validation/env.schema";
 
@@ -336,6 +342,113 @@ export class OpenAIProvider implements AIProvider {
 
       return {
         data: validated,
+        rawOutput: outputText,
+        modelUsed: model,
+        processingTimeMs,
+      };
+    } catch (error: unknown) {
+      if (error instanceof AIServiceError) {
+        throw error;
+      }
+
+      this.handleOpenAIError(error);
+    }
+  }
+
+  /**
+   * Generates an exhaustive Research Explorer breakdown of an uploaded document.
+   */
+  async exploreDocument(
+    options: DocumentAnalysisOptions
+  ): Promise<AIProviderResult<ResearchExplorerData>> {
+    const client = this.getClient();
+    const model = this.defaultModel;
+    const startTime = Date.now();
+
+    const { document, documentId, focusArea } = options;
+
+    const budgeted = budgetDocumentPages(document);
+    if (budgeted.passages.length === 0) {
+      throw new AIServiceError(
+        "Cannot explore document: No extractable text was found on any page. If this is a scanned document, OCR is required.",
+        "EMPTY_DOCUMENT_TEXT",
+        422
+      );
+    }
+
+    const prompt = buildResearchExplorerPrompt(
+      budgeted,
+      document.metadata,
+      focusArea
+    );
+
+    try {
+      let outputText = "";
+
+      try {
+        const response = await client.responses.create({
+          model,
+          instructions: RESEARCH_EXPLORER_SYSTEM_INSTRUCTION,
+          input: prompt,
+        });
+
+        if (response.output_text) {
+          outputText = response.output_text;
+        } else if (response.output && Array.isArray(response.output)) {
+          for (const item of response.output) {
+            if ("content" in item && typeof item.content === "string") {
+              outputText += item.content;
+            } else if ("text" in item && typeof item.text === "string") {
+              outputText += item.text;
+            }
+          }
+        }
+      } catch (responsesApiError: unknown) {
+        const errorMsg =
+          responsesApiError instanceof Error
+            ? responsesApiError.message.toLowerCase()
+            : String(responsesApiError).toLowerCase();
+
+        if (
+          errorMsg.includes("404") ||
+          errorMsg.includes("not found") ||
+          errorMsg.includes("unrecognized request") ||
+          errorMsg.includes("responses is not a function")
+        ) {
+          const chatResponse = await client.chat.completions.create({
+            model,
+            messages: [
+              { role: "system", content: RESEARCH_EXPLORER_SYSTEM_INSTRUCTION },
+              { role: "user", content: prompt },
+            ],
+            response_format: { type: "json_object" },
+          });
+
+          outputText = chatResponse.choices[0]?.message?.content || "";
+        } else {
+          throw responsesApiError;
+        }
+      }
+
+      if (!outputText || outputText.trim() === "") {
+        throw new AIServiceError(
+          "OpenAI returned an empty response. Please retry.",
+          "AI_EMPTY_RESPONSE",
+          502
+        );
+      }
+
+      const explorerData = parseAndValidateResearchExplorer(
+        outputText,
+        model,
+        documentId,
+        document.metadata
+      );
+
+      const processingTimeMs = Date.now() - startTime;
+
+      return {
+        data: explorerData,
         rawOutput: outputText,
         modelUsed: model,
         processingTimeMs,

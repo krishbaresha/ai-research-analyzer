@@ -1,4 +1,5 @@
 import { ResearchReport, DocumentAnalysisReport } from "@/types/research";
+import { ResearchExplorerData } from "@/types/research-explorer";
 import { ExtractedDocument } from "@/types/document";
 import { ChatAssistantMessage } from "@/types/chat";
 
@@ -97,4 +98,5 @@ export interface AIProvider {
   analyzeTopic(options: TopicAnalysisOptions): Promise<AIProviderResult<ResearchReport>>;
   analyzeDocument(options: DocumentAnalysisOptions): Promise<AIProviderResult<DocumentAnalysisReport>>;
   chatDocument(options: DocumentChatOptions): Promise<AIProviderResult<ChatAssistantMessage>>;
+  exploreDocument(options: DocumentAnalysisOptions): Promise<AIProviderResult<ResearchExplorerData>>;
 }

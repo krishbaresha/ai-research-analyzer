@@ -34,34 +34,41 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { DocumentReportViewer } from "./document-report-viewer";
 import { DocumentChat } from "@/features/document-chat/components/document-chat";
+import { ResearchExplorer } from "@/features/research-explorer/components/research-explorer";
+import { ResearchExplorerData } from "@/types/research-explorer";
+import { Sparkles, Compass } from "lucide-react";
 
 interface DocumentViewerProps {
   document: ExtractedDocument;
   initialReport?: DocumentAnalysisReport | null;
+  initialExplorerData?: ResearchExplorerData | null;
   onReset?: () => void;
 }
 
 export function DocumentViewer({
   document,
   initialReport = null,
+  initialExplorerData = null,
   onReset,
 }: DocumentViewerProps) {
   const { metadata, pages } = document;
 
-  // View tabs
-  const [activeTab, setActiveTab] = React.useState<"report" | "chat" | "pages">(
-    initialReport ? "report" : "chat"
+  // View tabs: "explorer" is the primary default experience
+  const [activeTab, setActiveTab] = React.useState<"explorer" | "report" | "chat" | "pages">(
+    initialExplorerData ? "explorer" : initialReport ? "report" : "explorer"
   );
   const [selectedPageIndex, setSelectedPageIndex] = React.useState(0);
   const [copiedFull, setCopiedFull] = React.useState(false);
   const [copiedPage, setCopiedPage] = React.useState(false);
 
-  // Analysis state
+  // Analysis / Explorer state
   const [focusArea, setFocusArea] = React.useState("");
   const [isAnalyzing, setIsAnalyzing] = React.useState(false);
-  const [analysisStep, setAnalysisStep] = React.useState("Initiating document analysis...");
+  const [isExploring, setIsExploring] = React.useState(false);
+  const [loadingStep, setLoadingStep] = React.useState("Initiating exploration...");
   const [analysisError, setAnalysisError] = React.useState<{ code: string; message: string } | null>(null);
   const [report, setReport] = React.useState<DocumentAnalysisReport | null>(initialReport);
+  const [explorerData, setExplorerData] = React.useState<ResearchExplorerData | null>(initialExplorerData);
 
   const currentPage = pages[selectedPageIndex] || pages[0];
   const pagesContainerRef = React.useRef<HTMLDivElement | null>(null);
@@ -90,17 +97,71 @@ export function DocumentViewer({
     }
   };
 
+  const handleExplore = async () => {
+    setAnalysisError(null);
+    setIsExploring(true);
+    setLoadingStep("Inspecting document context budget & verified metadata...");
+
+    const timer1 = setTimeout(() => {
+      setLoadingStep("Synthesizing 30-dimension academic intelligence & evidence ratings...");
+    }, 2000);
+
+    const timer2 = setTimeout(() => {
+      setLoadingStep("Reconstructing empirical tables & methodology workflow stages...");
+    }, 4500);
+
+    const timer3 = setTimeout(() => {
+      setLoadingStep("Building technical glossary & dual reading perspectives...");
+    }, 7000);
+
+    try {
+      const res = await fetch(`/api/documents/${metadata.id}/explore`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          focusArea: focusArea.trim() || undefined,
+        }),
+      });
+
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      clearTimeout(timer3);
+
+      const result = await res.json();
+
+      if (!res.ok || !result.success) {
+        setAnalysisError({
+          code: result?.error?.code || "EXPLORATION_FAILED",
+          message: result?.error?.message || "Failed to explore paper intelligence.",
+        });
+        setIsExploring(false);
+        return;
+      }
+
+      setExplorerData(result.data as ResearchExplorerData);
+      setActiveTab("explorer");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Network error during exploration.";
+      setAnalysisError({
+        code: "NETWORK_ERROR",
+        message: msg,
+      });
+    } finally {
+      setIsExploring(false);
+    }
+  };
+
   const handleAnalyze = async () => {
     setAnalysisError(null);
     setIsAnalyzing(true);
-    setAnalysisStep("Inspecting document context budget & page metadata...");
+    setLoadingStep("Inspecting document context budget & page metadata...");
 
     const timer1 = setTimeout(() => {
-      setAnalysisStep("Synthesizing research objectives & grounded findings...");
+      setLoadingStep("Synthesizing research objectives & grounded findings...");
     }, 1500);
 
     const timer2 = setTimeout(() => {
-      setAnalysisStep("Validating citation page numbers & report contract...");
+      setLoadingStep("Validating citation page numbers & report contract...");
     }, 3500);
 
     try {
@@ -291,7 +352,11 @@ export function DocumentViewer({
             <div className="rounded-lg border border-border p-3 space-y-1 bg-card">
               <span className="text-muted-foreground block text-[11px]">AI Status</span>
               <span className="text-base font-semibold text-foreground flex items-center gap-1.5">
-                {report ? (
+                {explorerData ? (
+                  <span className="text-emerald-600 dark:text-emerald-400 font-medium text-xs flex items-center gap-1">
+                    <Check className="h-3.5 w-3.5" /> Explorer Active
+                  </span>
+                ) : report ? (
                   <span className="text-emerald-600 dark:text-emerald-400 font-medium text-xs flex items-center gap-1">
                     <Check className="h-3.5 w-3.5" /> Report Ready
                   </span>
@@ -326,7 +391,7 @@ export function DocumentViewer({
               <div className="flex items-center gap-2">
                 <BrandSymbol size={16} className="text-primary" />
                 <CardTitle className="text-sm font-semibold">
-                  {report ? "Re-Analyze Document" : "Evidence-Grounded Document Analysis"}
+                  {explorerData ? "Academic Research Intelligence Ready" : "Explore Paper Intelligence"}
                 </CardTitle>
               </div>
               <Badge variant="outline" className="text-[10px] font-mono">
@@ -334,7 +399,7 @@ export function DocumentViewer({
               </Badge>
             </div>
             <CardDescription className="text-xs">
-              Synthesize an academic report with page citations, methodology assessment, key findings, and research gaps.
+              Transform this academic paper into a structured, evidence-grounded research exploration with beginner and researcher views, quantitative charts, and step-by-step methodology diagrams.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -342,7 +407,7 @@ export function DocumentViewer({
               label="Focus Area / Analytical Constraints (Optional)"
               placeholder="e.g. Focus on benchmark comparisons, computational complexity, and empirical dataset evaluation"
               value={focusArea}
-              disabled={isAnalyzing}
+              disabled={isAnalyzing || isExploring}
               onChange={(e) => setFocusArea(e.target.value)}
               helperText="Guide the synthesis to highlight specific research aspects."
             />
@@ -357,11 +422,11 @@ export function DocumentViewer({
               </Alert>
             )}
 
-            {isAnalyzing && (
+            {(isExploring || isAnalyzing) && (
               <div className="rounded-lg border border-border bg-card p-4 space-y-3">
                 <div className="flex items-center gap-2 text-xs font-semibold text-primary">
                   <span className="h-2 w-2 rounded-full bg-primary animate-ping" />
-                  <span>{analysisStep}</span>
+                  <span>{loadingStep}</span>
                 </div>
                 <div className="space-y-2">
                   <Skeleton className="h-4 w-3/4" />
@@ -370,15 +435,26 @@ export function DocumentViewer({
               </div>
             )}
 
-            <div className="flex justify-end pt-1">
+            <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
               <Button
+                variant="outline"
+                size="sm"
                 onClick={handleAnalyze}
                 isLoading={isAnalyzing}
-                disabled={isAnalyzing}
-                className="gap-2 text-xs"
+                disabled={isAnalyzing || isExploring}
+                className="gap-1.5 text-xs h-9"
               >
-                <BrandSymbol size={16} />
-                <span>{report ? "Re-Run Analysis" : "Generate Grounded Report"}</span>
+                <BookOpen className="h-3.5 w-3.5" />
+                <span>{report ? "Re-Generate Report" : "Generate Report"}</span>
+              </Button>
+              <Button
+                onClick={handleExplore}
+                isLoading={isExploring}
+                disabled={isAnalyzing || isExploring}
+                className="gap-2 text-xs h-9"
+              >
+                <Sparkles className="h-4 w-4" />
+                <span>{explorerData ? "Re-Explore Intelligence" : "Explore Paper Intelligence"}</span>
               </Button>
             </div>
           </CardContent>
@@ -386,13 +462,30 @@ export function DocumentViewer({
       )}
 
       {/* View Mode Switcher Tabs */}
-      <div className="flex border-b border-border">
+      <div className="flex border-b border-border overflow-x-auto no-scrollbar">
+        <button
+          type="button"
+          onClick={() => setActiveTab("explorer")}
+          className={cn(
+            "flex items-center gap-2 border-b-2 px-5 py-3 text-sm font-medium transition-colors cursor-pointer whitespace-nowrap",
+            activeTab === "explorer"
+              ? "border-primary text-primary font-semibold"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <Sparkles className="h-4 w-4 text-primary" />
+          <span>Research Explorer</span>
+          {explorerData && (
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 inline-block" />
+          )}
+        </button>
+
         {report && (
           <button
             type="button"
             onClick={() => setActiveTab("report")}
             className={cn(
-              "flex items-center gap-2 border-b-2 px-5 py-3 text-sm font-medium transition-colors cursor-pointer",
+              "flex items-center gap-2 border-b-2 px-5 py-3 text-sm font-medium transition-colors cursor-pointer whitespace-nowrap",
               activeTab === "report"
                 ? "border-primary text-primary font-semibold"
                 : "border-transparent text-muted-foreground hover:text-foreground"
@@ -402,11 +495,12 @@ export function DocumentViewer({
             <span>Structured Research Report</span>
           </button>
         )}
+
         <button
           type="button"
           onClick={() => setActiveTab("chat")}
           className={cn(
-            "flex items-center gap-2 border-b-2 px-5 py-3 text-sm font-medium transition-colors cursor-pointer",
+            "flex items-center gap-2 border-b-2 px-5 py-3 text-sm font-medium transition-colors cursor-pointer whitespace-nowrap",
             activeTab === "chat"
               ? "border-primary text-primary font-semibold"
               : "border-transparent text-muted-foreground hover:text-foreground"
@@ -415,11 +509,12 @@ export function DocumentViewer({
           <MessageSquare className="h-4 w-4" />
           <span>Document Chat & Q&A</span>
         </button>
+
         <button
           type="button"
           onClick={() => setActiveTab("pages")}
           className={cn(
-            "flex items-center gap-2 border-b-2 px-5 py-3 text-sm font-medium transition-colors cursor-pointer",
+            "flex items-center gap-2 border-b-2 px-5 py-3 text-sm font-medium transition-colors cursor-pointer whitespace-nowrap",
             activeTab === "pages"
               ? "border-primary text-primary font-semibold"
               : "border-transparent text-muted-foreground hover:text-foreground"
@@ -429,6 +524,43 @@ export function DocumentViewer({
           <span>Extracted Document Pages ({pages.length})</span>
         </button>
       </div>
+
+      {/* Tab 0: Render Research Explorer */}
+      {activeTab === "explorer" && (
+        explorerData ? (
+          <ResearchExplorer
+            document={document}
+            explorerData={explorerData}
+            onSelectPage={handleSelectPage}
+            onViewPages={() => setActiveTab("pages")}
+          />
+        ) : (
+          <Card className="border-dashed border-2 border-border/80 bg-card/40 p-8 sm:p-12 text-center space-y-4">
+            <div className="mx-auto h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+              <Sparkles className="h-6 w-6" />
+            </div>
+            <div className="max-w-lg mx-auto space-y-1.5">
+              <h3 className="text-base font-semibold text-foreground">
+                Unlock 30-Dimension Academic Intelligence
+              </h3>
+              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                Transform this paper into an interactive academic exploration with beginner intuitions, technical summaries, verified table reconstructions, and methodology workflow diagrams.
+              </p>
+            </div>
+            <div className="pt-2">
+              <Button
+                onClick={handleExplore}
+                isLoading={isExploring}
+                disabled={isExploring || isAnalyzing}
+                className="gap-2 text-xs"
+              >
+                <Sparkles className="h-4 w-4" />
+                <span>Explore Paper Intelligence Now</span>
+              </Button>
+            </div>
+          </Card>
+        )
+      )}
 
       {/* Tab 1: Render Document Analysis Report */}
       {activeTab === "report" && report && (

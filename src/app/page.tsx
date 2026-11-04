@@ -6,7 +6,6 @@ import {
   FileSearch,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { BrandSymbol } from "@/components/brand/logo";
 import {
   Card,
   CardContent,
@@ -18,10 +17,6 @@ export default function DashboardPage() {
       {/* Hero / Executive Welcome */}
       <div className="relative overflow-hidden rounded-xl border border-border bg-gradient-to-br from-card via-card to-primary/5 p-6 sm:p-8 shadow-sm">
         <div className="max-w-3xl space-y-3">
-          <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-            <BrandSymbol size={16} />
-            <span>Traceable Academic Intelligence</span>
-          </div>
           <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
             Structured, Evidence-Grounded Research Workspace
           </h2>

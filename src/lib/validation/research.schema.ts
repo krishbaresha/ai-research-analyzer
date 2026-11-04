@@ -36,7 +36,15 @@ export const pageReferencesCoerce = z.preprocess((val) => {
     return val > 0 ? [val] : [];
   }
   if (typeof val === "string") {
-    const parsed = parseInt(val.trim(), 10);
+    const trimmed = val.trim();
+    if (!trimmed) return [];
+    if (trimmed.includes(",") || trimmed.includes(";") || trimmed.includes(" ")) {
+      return trimmed
+        .split(/[,;\s]+/)
+        .map((s) => parseInt(s.trim(), 10))
+        .filter((n) => typeof n === "number" && !isNaN(n) && n > 0);
+    }
+    const parsed = parseInt(trimmed, 10);
     return !isNaN(parsed) && parsed > 0 ? [parsed] : [];
   }
   if (Array.isArray(val)) {
