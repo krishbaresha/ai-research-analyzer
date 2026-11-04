@@ -14,11 +14,14 @@
 | **Phase 3** | PDF Upload and Reliable Text Extraction | **COMPLETED** | 2026-11-03 |
 | **Phase 4** | PDF Analysis and Evidence-Grounded Reports | **COMPLETED** | 2026-11-03 |
 | **Phase 5** | Document Chat + Scholarly Paper Import + Research Library Foundation | **COMPLETED** | 2026-11-03 |
-| **Phase 6** | Persistence, Projects, and History | Planned (Next) | — |
-| **Phase 7** | Multi-Document Synthesis and Literature Reviews | Planned | — |
-| **Phase 8** | Web Research and Live Academic Source Discovery | Planned | — |
-| **Phase 9** | Export, Polish, and Production Readiness | Planned | — |
-| **Phase 10** | Extensible Research Automation System | Planned | — |
+| **Phase 5.5** | Research Explorer Experience & Academic Intelligence | **COMPLETED** | 2026-11-05 |
+| **Phase 6** | Research Explorer Core & Epistemic Deep Dive | Planned (Next) | — |
+| **Phase 7** | Visual Intelligence & Reconstructed Scientific Artifacts | Planned | — |
+| **Phase 8** | Persistent Research Workspace (PostgreSQL/Supabase) | Planned | — |
+| **Phase 9** | Multi-Paper Literature Intelligence & Synthesis Matrix | Planned | — |
+| **Phase 10** | Scholarly Discovery & Open Access Ingestion | Planned | — |
+| **Phase 11** | Background Automation Engine & Alerting | Planned | — |
+| **Phase 12** | Production Hardening, Multi-Format Exports & Scale | Planned | — |
 
 ---
 

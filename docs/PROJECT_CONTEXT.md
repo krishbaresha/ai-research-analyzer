@@ -284,11 +284,14 @@ To maintain focus and avoid scope bloat, the following are strictly prohibited i
 | **Phase 3** | PDF Upload & Reliable Text Extraction | **COMPLETED** | Server-side PDF validation, `unpdf` page boundary mapping, scanned document detection, ephemeral document store. |
 | **Phase 4** | PDF Analysis & Evidence-Grounded Reports | **COMPLETED** | Context-budgeted document analysis, 12 academic report sections, clickable page citations, prompt injection defense. |
 | **Phase 5** | Document Chat + Scholarly Paper Import + Research Library Foundation | **COMPLETED** | Grounded Q&A, URL/arXiv/DOI paper import, SSRF defense suite, in-memory Research Library, and event bus foundation. |
-| **Phase 6** | Persistence, Projects & Research History | **NEXT** | Supabase / PostgreSQL database integration, user research workspaces, persistent paper library, project tagging. |
-| **Phase 7** | Multi-Document Synthesis & Literature Reviews | Planned | Cross-paper comparative analysis, matrix generation, citation graph synthesis, and literature review builder. |
-| **Phase 8** | Web Research & Live Academic Source Discovery | Planned | Controlled academic search integration, live paper discovery, preprint tracking, and verified external citations. |
-| **Phase 9** | Export, Polish & Production Readiness | Planned | Publication-ready PDF/Markdown/BibTeX export, responsive refinement, performance auditing, WCAG AA accessibility. |
-| **Phase 10** | Extensible Research Automation System | Planned | Event-driven research monitors, automated arXiv digest generation, periodic literature updates, and customizable research workflows. |
+| **Phase 5.5** | Research Explorer & Academic Intelligence Experience | **COMPLETED** | 30-dimension academic intelligence, dual reading perspectives (Beginner/Researcher), at-a-glance cards, verified SVG charts, workflow diagrams, ambient chat dock. |
+| **Phase 6** | Research Explorer Core & Epistemic Deep Dive | **PLANNED** | Research-first workspace, sticky outline navigation, claim-level epistemic verification, missing-information reporting. |
+| **Phase 7** | Visual Intelligence & Reconstructed Scientific Artifacts | **PLANNED** | Zero-hallucination SVG charts from quantitative tables, step-by-step pipeline diagrams, figure extraction. |
+| **Phase 8** | Persistent Research Workspace | **PLANNED** | PostgreSQL / Supabase integration, Cloudflare R2 / S3 blob storage, persistent research projects, folders, and history. |
+| **Phase 9** | Multi-Paper Literature Intelligence & Synthesis Matrix | **PLANNED** | Cross-paper synthesis matrix, consensus/contradiction detector, collective research gap analysis. |
+| **Phase 10** | Scholarly Discovery & Open Access Ingestion | **PLANNED** | Academic literature search via OpenAlex/Crossref, Open Access link verification, citation graph exploration. |
+| **Phase 11** | Background Automation Engine & Alerting | **PLANNED** | Inngest / asynchronous job queue, job tracking, automated research alerts, weekly preprint digests. |
+| **Phase 12** | Production Hardening, Multi-Format Exports & Scale | **PLANNED** | LaTeX, BibTeX, DOCX, vector PDF exports, WCAG AA accessibility, performance edge caching, Sentry telemetry. |
 
 ---
 

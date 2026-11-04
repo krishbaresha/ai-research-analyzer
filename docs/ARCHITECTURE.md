@@ -39,6 +39,7 @@
         │
         ▼
 [ Domain Feature Layer ]
+   - src/features/research-explorer/ (ResearchExplorer, ExecutiveCanvas, AtAGlanceGrid, ReconstructedChartsView, WorkflowDiagramView, TechnicalGlossaryView, ExplorerSectionsView, AmbientChatDock)
    - src/features/research/ (Topic analysis forms, report viewer, evidence badges)
    - src/features/pdf-analysis/ (Upload dropzone, page-by-page DocumentViewer, DocumentReportViewer, interactive citation navigation)
    - src/features/document-chat/ (Interactive DocumentChat, claim citations, sources accordion, retrieval transparency)
@@ -46,12 +47,13 @@
         │
         ▼
 [ Server Boundary: API Handlers & Route Handlers ]
-   - src/app/api/documents/upload/route.ts      (POST: multipart upload & extraction)
-   - src/app/api/documents/[id]/route.ts        (GET: document & extracted pages retrieval)
-   - src/app/api/documents/[id]/analyze/route.ts (POST: grounded document analysis via OpenAI Responses API)
-   - src/app/api/documents/[id]/chat/route.ts   (POST: grounded document chat; DELETE: clear session)
+   - src/app/api/documents/upload/route.ts       (POST: multipart upload & extraction)
+   - src/app/api/documents/[id]/route.ts         (GET: document & extracted pages retrieval)
+   - src/app/api/documents/[id]/explore/route.ts (POST: 30-dimension Research Explorer academic analysis)
+   - src/app/api/documents/[id]/analyze/route.ts (POST: grounded document report via OpenAI Responses API)
+   - src/app/api/documents/[id]/chat/route.ts    (POST: grounded document chat; DELETE: clear session)
    - src/app/api/research/analyze-topic/route.ts (POST: topic analysis via OpenAI Responses API)
-   - src/app/api/health/route.ts                (GET: health check & config diagnostics)
+   - src/app/api/health/route.ts                 (GET: health check & config diagnostics)
         │
         ▼
 [ Core Services & Processing Engine ]
