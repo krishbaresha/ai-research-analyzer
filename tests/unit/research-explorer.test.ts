@@ -297,6 +297,72 @@ describe("Research Explorer Parser & Schema Validator (Unit)", () => {
     expect(result.workflowDiagrams[0].steps[1].stepNumber).toBe(2);
   });
 
+  it("accurately parses all 4 epistemic status categories and negative reporting callouts", () => {
+    const payloadWithEpistemicTiers = {
+      ...validExplorerPayload,
+      sections: [
+        {
+          id: "sec-doc",
+          title: "Architecture Formulation",
+          cluster: "methodology",
+          status: "from_document",
+          summary: "Explicitly defined residual mapping F(x) = H(x) - x.",
+          detail: "Document states this mapping directly on page 2.",
+          beginnerExplanation: "Shortcut connections carry the input through.",
+          pageReferences: [2],
+          claims: [{ claim: "F(x) + x", status: "from_document", page: 2 }],
+        },
+        {
+          id: "sec-interp",
+          title: "Theoretical Intuition",
+          cluster: "foundation",
+          status: "ai_interpretation",
+          summary: "Model suggests residual learning prevents vanishing gradients.",
+          detail: "Authors do not prove gradient bounds analytically; synthesized from context.",
+          beginnerExplanation: "Makes the math easier for computers to solve.",
+          pageReferences: [2],
+          claims: [{ claim: "Prevents gradient extinction", status: "ai_interpretation" }],
+        },
+        {
+          id: "sec-unreported",
+          title: "Carbon Footprint & Energy Consumption",
+          cluster: "impact",
+          status: "not_reported",
+          summary: "The authors do not report energy consumption or CO2 emissions for ImageNet training.",
+          detail: "Section unstated in the source paper.",
+          beginnerExplanation: "The authors didn't measure how much electricity the experiments used.",
+          pageReferences: [],
+          claims: [],
+        },
+        {
+          id: "sec-unestablished",
+          title: "Generalization to Unseen Modalities",
+          cluster: "evaluation",
+          status: "not_established",
+          summary: "Cannot be verified whether ResNets generalize to audio without additional evaluation.",
+          detail: "Evidence is insufficient to confirm or deny this claim.",
+          beginnerExplanation: "We cannot tell from this paper if this works for sound or music.",
+          pageReferences: [],
+          claims: [],
+        },
+      ],
+    };
+
+    const rawJson = JSON.stringify(payloadWithEpistemicTiers);
+    const result = parseAndValidateResearchExplorer(
+      rawJson,
+      "gpt-4o-mini",
+      dummyDocument.metadata.id,
+      dummyDocument.metadata
+    );
+
+    expect(result.sections).toHaveLength(4);
+    expect(result.sections[0].evidenceStatus).toBe("from_document");
+    expect(result.sections[1].evidenceStatus).toBe("ai_interpretation");
+    expect(result.sections[2].evidenceStatus).toBe("not_reported");
+    expect(result.sections[3].evidenceStatus).toBe("not_established");
+  });
+
   it("throws AIResponseParseError when input is completely unparseable", () => {
     expect(() =>
       parseAndValidateResearchExplorer("Not JSON at all", "gpt-4o-mini", dummyDocument.metadata.id, dummyDocument.metadata)

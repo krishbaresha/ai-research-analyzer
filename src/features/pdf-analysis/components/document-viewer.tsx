@@ -36,7 +36,7 @@ import { DocumentReportViewer } from "./document-report-viewer";
 import { DocumentChat } from "@/features/document-chat/components/document-chat";
 import { ResearchExplorer } from "@/features/research-explorer/components/research-explorer";
 import { ResearchExplorerData } from "@/types/research-explorer";
-import { Sparkles, Compass } from "lucide-react";
+import { Sparkles } from "lucide-react";
 
 interface DocumentViewerProps {
   document: ExtractedDocument;
@@ -648,6 +648,18 @@ export function DocumentViewer({
                     )}
                     <span>Copy Page</span>
                   </Button>
+                  {explorerData && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setActiveTab("explorer")}
+                      className="h-8 gap-1.5 text-xs text-primary hover:bg-primary/10"
+                      title="Return to Research Explorer"
+                    >
+                      <Sparkles className="h-3.5 w-3.5" />
+                      <span>Back to Explorer</span>
+                    </Button>
+                  )}
                 </div>
               </div>
             </CardHeader>

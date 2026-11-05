@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { normalizeArxivId } from "@/lib/import/providers/arxiv";
+import { normalizeArxivId, arxivProvider } from "@/lib/import/providers/arxiv";
 import { extractDoi, resolveSource } from "@/lib/import/source-resolver";
 import { openAlexProvider } from "@/lib/import/providers/openalex";
 
@@ -53,6 +53,16 @@ describe("Source Resolver & Scholarly Adapters (Unit)", () => {
     });
 
     it("resolves arXiv identifier to open-access PDF link and metadata", async () => {
+      vi.spyOn(arxivProvider, "resolveMetadata").mockResolvedValueOnce({
+        title: "Attention Is All You Need",
+        authors: ["Ashish Vaswani", "Noam Shazeer"],
+        publicationYear: 2017,
+        arxivId: "2301.12345",
+        pdfUrl: "https://arxiv.org/pdf/2301.12345.pdf",
+        openAccessStatus: "green",
+        metadataProvider: "arxiv",
+      });
+
       const res = await resolveSource("2301.12345");
       expect(res.detectedType).toBe("arxiv");
       expect(res.normalizedIdentifier).toBe("2301.12345");

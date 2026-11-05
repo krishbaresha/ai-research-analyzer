@@ -120,7 +120,7 @@ export const explorerSectionItemSchema = z.preprocess(
             : typeof obj.technicalDetail === "string"
             ? obj.technicalDetail
             : String(obj.content || obj.detail || "Technical formulation"),
-        evidenceStatus: obj.evidenceStatus || "from_document",
+        evidenceStatus: obj.evidenceStatus || obj.status || "from_document",
         pageReferences: obj.pageReferences || [],
         quote: typeof obj.quote === "string" ? obj.quote : undefined,
         bulletPoints: obj.bulletPoints || [],

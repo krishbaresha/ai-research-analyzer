@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { GitCommit, ArrowDown, ArrowRight, Bookmark, Layers, GitBranch } from "lucide-react";
+import { Bookmark, GitBranch } from "lucide-react";
 import { WorkflowDiagram } from "@/types/research-explorer";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -57,7 +57,7 @@ export function WorkflowDiagramView({
           <CardContent className="p-5 space-y-4">
             {/* Step Pipeline Flow */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              {diag.steps.map((step, idx) => (
+              {diag.steps.map((step) => (
                 <div
                   key={step.stepNumber}
                   className="rounded-lg border border-border bg-card p-3 space-y-2 flex flex-col justify-between relative group hover:border-primary/50 transition-colors"

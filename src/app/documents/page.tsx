@@ -8,7 +8,6 @@ import {
   PlusCircle,
   Trash2,
   ExternalLink,
-  Info,
   Calendar,
   Users,
   ArrowRight,

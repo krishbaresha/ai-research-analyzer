@@ -1,5 +1,3 @@
-import { EvidenceLabel } from "./research";
-
 export type ReadingMode = "beginner" | "researcher";
 
 export type ExplorerEvidenceStatus =

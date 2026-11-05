@@ -2,26 +2,10 @@
 
 import * as React from "react";
 import {
-  FileText,
-  Download,
-  BookOpen,
-  MessageSquare,
-  Sparkles,
-  Layers,
-  GraduationCap,
-  Microscope,
-  Share2,
-  Printer,
-  ChevronDown,
-} from "lucide-react";
-import {
   ResearchExplorerData,
   ReadingMode,
 } from "@/types/research-explorer";
 import { ExtractedDocument } from "@/types/document";
-import { BrandSymbol } from "@/components/brand/logo";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { ResearchIdentityCard } from "./research-identity-card";
 import { ExecutiveCanvas } from "./executive-canvas";
 import { AtAGlanceGrid } from "./at-a-glance-grid";
@@ -30,7 +14,16 @@ import { WorkflowDiagramView } from "./workflow-diagram-view";
 import { ExplorerSectionsView } from "./explorer-sections-view";
 import { TechnicalGlossaryView } from "./technical-glossary-view";
 import { AmbientChatDock } from "./ambient-chat-dock";
-import { cn } from "@/lib/utils";
+import { OutlineNav, OutlineNavItem } from "./outline-nav";
+import {
+  Compass,
+  Sparkles,
+  Target,
+  BarChart3,
+  Layers,
+  BookOpen,
+  GitBranch,
+} from "lucide-react";
 
 interface ResearchExplorerProps {
   document: ExtractedDocument;
@@ -128,18 +121,18 @@ export function ResearchExplorer({
     URL.revokeObjectURL(url);
   };
 
-  const navItems = [
-    { id: "identity", label: "Identity" },
-    { id: "executive", label: "Overview" },
-    { id: "glance", label: "At a Glance" },
+  const navItems: OutlineNavItem[] = [
+    { id: "identity", label: "Identity", icon: Compass },
+    { id: "executive", label: "Overview", icon: Sparkles },
+    { id: "glance", label: "At a Glance", icon: Target },
     ...(explorerData.reconstructedCharts && explorerData.reconstructedCharts.length > 0
-      ? [{ id: "charts", label: `Charts (${explorerData.reconstructedCharts.length})` }]
+      ? [{ id: "charts", label: "Charts", count: explorerData.reconstructedCharts.length, icon: BarChart3 }]
       : []),
     ...(explorerData.workflowDiagrams && explorerData.workflowDiagrams.length > 0
-      ? [{ id: "workflow", label: `Workflow (${explorerData.workflowDiagrams.length})` }]
+      ? [{ id: "workflow", label: "Workflow", count: explorerData.workflowDiagrams.length, icon: GitBranch }]
       : []),
-    { id: "dimensions", label: "30 Dimensions" },
-    { id: "glossary", label: `Glossary (${explorerData.glossary?.length || 0})` },
+    { id: "dimensions", label: "30 Dimensions", count: explorerData.sections.length, icon: BookOpen },
+    { id: "glossary", label: "Glossary", count: explorerData.glossary?.length || 0, icon: Layers },
   ];
 
   const scrollTo = (id: string) => {
@@ -150,114 +143,63 @@ export function ResearchExplorer({
     }
   };
 
+  // Scroll-spy observer tracking active visible section
+  React.useEffect(() => {
+    if (typeof window === "undefined" || !("IntersectionObserver" in window)) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const cleanId = entry.target.id.replace("ra-", "");
+            setActiveNav(cleanId);
+          }
+        });
+      },
+      {
+        rootMargin: "-15% 0px -70% 0px",
+        threshold: 0,
+      }
+    );
+
+    const sectionIds = [
+      "ra-identity",
+      "ra-executive",
+      "ra-glance",
+      ...(explorerData.reconstructedCharts?.length ? ["ra-charts"] : []),
+      ...(explorerData.workflowDiagrams?.length ? ["ra-workflow"] : []),
+      "ra-dimensions",
+      "ra-glossary",
+    ];
+
+    sectionIds.forEach((id) => {
+      const el = window.document.getElementById(id);
+      if (el) observer.observe(el);
+    });
+
+    return () => observer.disconnect();
+  }, [explorerData]);
+
   return (
     <div className="space-y-6 relative">
-      {/* Top Controls & Reading Mode Bar */}
-      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border border-border rounded-xl p-2.5 sm:px-4 shadow-sm flex flex-wrap items-center justify-between gap-3">
-        {/* Navigation jump pills */}
-        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-1">
-          {navItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => scrollTo(item.id)}
-              className={cn(
-                "px-2.5 py-1 text-xs font-medium rounded-md whitespace-nowrap transition-colors cursor-pointer",
-                activeNav === item.id
-                  ? "bg-primary text-primary-foreground font-semibold shadow-xs"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
-              )}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Right side: Mode Switcher & Actions */}
-        <div className="flex items-center gap-2 ml-auto">
-          {/* Reading Mode Switcher */}
-          <div className="inline-flex items-center rounded-lg border border-border bg-muted/40 p-0.5 text-xs">
-            <button
-              type="button"
-              onClick={() => setReadingMode("beginner")}
-              className={cn(
-                "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md font-medium transition-all cursor-pointer",
-                readingMode === "beginner"
-                  ? "bg-card text-foreground font-semibold shadow-xs"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-              title="Plain english explanations, intuitive analogies, and beginner guidance"
-            >
-              <GraduationCap className="h-3.5 w-3.5 text-emerald-600" />
-              <span>Beginner</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setReadingMode("researcher")}
-              className={cn(
-                "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md font-medium transition-all cursor-pointer",
-                readingMode === "researcher"
-                  ? "bg-card text-foreground font-semibold shadow-xs"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-              title="Methodological rigor, mathematical formulas, and scientific precision"
-            >
-              <Microscope className="h-3.5 w-3.5 text-blue-600" />
-              <span>Researcher</span>
-            </button>
-          </div>
-
-          {/* Export Dropdown / Actions */}
-          <div className="flex items-center gap-1">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handlePrintPdf}
-              className="h-8 gap-1.5 text-xs"
-              title="Print or Save as Vector PDF"
-            >
-              <Printer className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">PDF</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleExportWordDoc}
-              className="h-8 gap-1.5 text-xs"
-              title="Download Word Document (.doc)"
-            >
-              <Download className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Word</span>
-            </Button>
-            {onViewPages && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onViewPages}
-                className="h-8 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
-                title="View Raw Extracted Pages"
-              >
-                <Layers className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Pages</span>
-              </Button>
-            )}
-            <Button
-              variant="default"
-              size="sm"
-              onClick={() => {
-                setAmbientChatQuery(undefined);
-                setIsAmbientChatOpen(true);
-              }}
-              className="h-8 gap-1.5 text-xs shadow-xs"
-            >
-              <MessageSquare className="h-3.5 w-3.5" />
-              <span>Ask Paper AI</span>
-            </Button>
-          </div>
-        </div>
-      </div>
+      {/* Sticky High-Density Outline Navigation Rail */}
+      <OutlineNav
+        items={navItems}
+        activeId={activeNav}
+        onNavigate={scrollTo}
+        readingMode={readingMode}
+        onReadingModeChange={setReadingMode}
+        onPrintPdf={handlePrintPdf}
+        onExportWord={handleExportWordDoc}
+        onViewPages={onViewPages}
+        onOpenChat={() => {
+          setAmbientChatQuery(undefined);
+          setIsAmbientChatOpen(true);
+        }}
+      />
 
       {/* 1. Research Identity Canvas */}
-      <section id="ra-identity" className="scroll-mt-16">
+      <section id="ra-identity" className="scroll-mt-20">
         <ResearchIdentityCard
           identity={explorerData.identity}
           onOpenPdf={onViewPages}
@@ -265,7 +207,7 @@ export function ResearchExplorer({
       </section>
 
       {/* 2. Executive Research Canvas */}
-      <section id="ra-executive" className="scroll-mt-16">
+      <section id="ra-executive" className="scroll-mt-20">
         <ExecutiveCanvas
           overview={explorerData.executiveOverview}
           readingMode={readingMode}
@@ -273,7 +215,7 @@ export function ResearchExplorer({
       </section>
 
       {/* 3. Research At a Glance Grid */}
-      <section id="ra-glance" className="scroll-mt-16">
+      <section id="ra-glance" className="scroll-mt-20">
         <AtAGlanceGrid
           glance={explorerData.atAGlance}
           onSelectPage={onSelectPage}
@@ -281,7 +223,7 @@ export function ResearchExplorer({
       </section>
 
       {/* 4. Reconstructed Visual Charts (Zero hallucination, verified tables only) */}
-      <section id="ra-charts" className="scroll-mt-16">
+      <section id="ra-charts" className="scroll-mt-20">
         <ReconstructedChartsView
           charts={explorerData.reconstructedCharts || []}
           onSelectPage={onSelectPage}
@@ -290,7 +232,7 @@ export function ResearchExplorer({
 
       {/* 5. Methodological Workflow Stages */}
       {explorerData.workflowDiagrams && explorerData.workflowDiagrams.length > 0 && (
-        <section id="ra-workflow" className="scroll-mt-16">
+        <section id="ra-workflow" className="scroll-mt-20">
           <WorkflowDiagramView
             diagrams={explorerData.workflowDiagrams}
             onSelectPage={onSelectPage}
@@ -299,7 +241,7 @@ export function ResearchExplorer({
       )}
 
       {/* 6. Comprehensive 30-Dimension Explorer */}
-      <section id="ra-dimensions" className="scroll-mt-16">
+      <section id="ra-dimensions" className="scroll-mt-20">
         <ExplorerSectionsView
           sections={explorerData.sections}
           readingMode={readingMode}
@@ -309,7 +251,7 @@ export function ResearchExplorer({
       </section>
 
       {/* 7. Technical Academic Glossary */}
-      <section id="ra-glossary" className="scroll-mt-16">
+      <section id="ra-glossary" className="scroll-mt-20">
         <TechnicalGlossaryView
           glossary={explorerData.glossary || []}
           readingMode={readingMode}
