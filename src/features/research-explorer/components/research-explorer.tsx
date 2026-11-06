@@ -9,6 +9,7 @@ import { ExtractedDocument } from "@/types/document";
 import { ResearchIdentityCard } from "./research-identity-card";
 import { ExecutiveCanvas } from "./executive-canvas";
 import { AtAGlanceGrid } from "./at-a-glance-grid";
+import { ResearchRigorAndGapView } from "./research-rigor-and-gap-view";
 import { ReconstructedChartsView } from "./reconstructed-charts-view";
 import { WorkflowDiagramView } from "./workflow-diagram-view";
 import { ExplorerSectionsView } from "./explorer-sections-view";
@@ -19,6 +20,7 @@ import {
   Compass,
   Sparkles,
   Target,
+  Scale,
   BarChart3,
   Layers,
   BookOpen,
@@ -126,6 +128,7 @@ export function ResearchExplorer({
     { id: "identity", label: "Identity", icon: Compass },
     { id: "executive", label: "Overview", icon: Sparkles },
     { id: "glance", label: "At a Glance", icon: Target },
+    { id: "rigor-gaps", label: "Rigor & Gaps", icon: Scale },
     ...(explorerData.reconstructedCharts && explorerData.reconstructedCharts.length > 0
       ? [{ id: "charts", label: "Charts", count: explorerData.reconstructedCharts.length, icon: BarChart3 }]
       : []),
@@ -167,6 +170,7 @@ export function ResearchExplorer({
       "ra-identity",
       "ra-executive",
       "ra-glance",
+      "ra-rigor-gaps",
       ...(explorerData.reconstructedCharts?.length ? ["ra-charts"] : []),
       ...(explorerData.workflowDiagrams?.length ? ["ra-workflow"] : []),
       "ra-dimensions",
@@ -223,7 +227,17 @@ export function ResearchExplorer({
         />
       </section>
 
-      {/* 4. Reconstructed Visual Charts (Zero hallucination, verified tables only) */}
+      {/* 4. Academic Rigor, Strengths vs. Weaknesses & Actionable Research Gaps */}
+      <section id="ra-rigor-gaps" className="scroll-mt-20">
+        <ResearchRigorAndGapView
+          explorerData={explorerData}
+          readingMode={readingMode}
+          onSelectPage={onSelectPage}
+          onAskAssistant={handleOpenChatWithQuery}
+        />
+      </section>
+
+      {/* 5. Reconstructed Visual Charts (Zero hallucination, verified tables only) */}
       <section id="ra-charts" className="scroll-mt-20">
         <ReconstructedChartsView
           charts={explorerData.reconstructedCharts || []}

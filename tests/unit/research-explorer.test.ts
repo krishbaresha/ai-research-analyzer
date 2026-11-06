@@ -363,6 +363,61 @@ describe("Research Explorer Parser & Schema Validator (Unit)", () => {
     expect(result.sections[3].evidenceStatus).toBe("not_established");
   });
 
+  it("safeguards against [object Object] by converting nested objects into readable strings", () => {
+    const payloadWithNestedObjects = {
+      ...validExplorerPayload,
+      sections: [
+        {
+          id: "sec_threats",
+          title: "Threats to Validity",
+          cluster: "evaluation",
+          status: "from_document",
+          // Object instead of string
+          beginnerExplanation: {
+            internalValidity: "Small benchmark sample limits sweeping conclusions.",
+            externalValidity: "Tested only on synthetic vision tasks.",
+          },
+          researcherTechnical: {
+            constructValidity: "Surrogate accuracy metrics may not capture real deployment latency.",
+          },
+          pageReferences: [2],
+        },
+        {
+          id: "sec_future",
+          title: "Future Research Directions",
+          cluster: "impact",
+          status: "from_document",
+          // Array of strings instead of string
+          beginnerExplanation: [
+            "Scale architecture to larger multimodal models.",
+            "Benchmark on noisy real-world biomedical data.",
+          ],
+          researcherTechnical: "[object Object]", // String containing literal [object Object]
+          pageReferences: [3],
+        },
+      ],
+    };
+
+    const rawJson = JSON.stringify(payloadWithNestedObjects);
+    const result = parseAndValidateResearchExplorer(
+      rawJson,
+      "gpt-4o-mini",
+      dummyDocument.metadata.id,
+      dummyDocument.metadata
+    );
+
+    expect(result.sections).toHaveLength(2);
+    expect(result.sections[0].beginnerExplanation).not.toContain("[object Object]");
+    expect(result.sections[0].beginnerExplanation).toContain("Internal Validity");
+    expect(result.sections[0].researcherTechnical).not.toContain("[object Object]");
+    expect(result.sections[0].researcherTechnical).toContain("Construct Validity");
+
+    expect(result.sections[1].beginnerExplanation).not.toContain("[object Object]");
+    expect(result.sections[1].beginnerExplanation).toContain("Scale architecture");
+    expect(result.sections[1].researcherTechnical).not.toContain("[object Object]");
+    expect(result.sections[1].researcherTechnical).toContain("empirical avenues");
+  });
+
   it("throws AIResponseParseError when input is completely unparseable", () => {
     expect(() =>
       parseAndValidateResearchExplorer("Not JSON at all", "gpt-4o-mini", dummyDocument.metadata.id, dummyDocument.metadata)

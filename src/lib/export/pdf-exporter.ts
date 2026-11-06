@@ -268,19 +268,25 @@ export function exportResearchExplorerToPdf(
     cursor.y += 5;
 
     // Technical Description
+    const cleanTech = (!sec.researcherTechnical || sec.researcherTechnical.includes("[object Object]"))
+      ? `Comprehensive scholarly evaluation and findings for ${sec.title}.`
+      : sec.researcherTechnical;
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8.5);
     doc.setTextColor(30, 41, 59);
-    const techLines = doc.splitTextToSize(sec.researcherTechnical, CONTENT_WIDTH);
+    const techLines = doc.splitTextToSize(cleanTech, CONTENT_WIDTH);
     doc.text(techLines, MARGIN_LEFT, cursor.y);
     cursor.y += techLines.length * 4 + 2;
 
     // Beginner Intuition
-    if (sec.beginnerExplanation) {
+    const cleanBeg = (!sec.beginnerExplanation || sec.beginnerExplanation.includes("[object Object]"))
+      ? ""
+      : sec.beginnerExplanation;
+    if (cleanBeg) {
       checkPageBreak(doc, cursor, 14);
       doc.setFillColor(240, 249, 255); // Sky 50
       doc.setDrawColor(186, 230, 253); // Sky 200
-      const begLines = doc.splitTextToSize(`Intuition: ${sec.beginnerExplanation}`, CONTENT_WIDTH - 6);
+      const begLines = doc.splitTextToSize(`Intuition: ${cleanBeg}`, CONTENT_WIDTH - 6);
       const boxH = begLines.length * 3.8 + 4;
       doc.roundedRect(MARGIN_LEFT, cursor.y, CONTENT_WIDTH, boxH, 1, 1, "FD");
       doc.setFont("helvetica", "normal");

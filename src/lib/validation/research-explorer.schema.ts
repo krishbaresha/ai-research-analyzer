@@ -46,23 +46,227 @@ export const researchIdentitySchema = z.preprocess(
   })
 );
 
-export const executiveResearchOverviewSchema = z.object({
-  beginnerExplanation: z.string().min(1).default("This paper explores an academic research question."),
-  beginnerAnalogy: z.string().default("Imagine a process where multiple components collaborate in parallel."),
-  technicalContribution: z.string().min(1).default("Presents an empirical methodology and theoretical contribution."),
-  problemAddressed: z.string().default("Addressing existing computational or theoretical bottlenecks."),
-  whyItMatters: z.string().default("Enables more efficient and scalable academic inquiry."),
-  whatDiscovered: z.string().default("Achieved measurable empirical improvements over tested baselines."),
-  whoBenefits: stringArrayCoerce.default(["Academic researchers", "Industry practitioners", "Students"]),
-});
+export function cleanReadableSectionText(
+  val: unknown,
+  fallback = "Analysis documented in source material."
+): string {
+  if (val === null || val === undefined) return fallback;
+
+  if (typeof val === "string") {
+    const trimmed = val.trim();
+    if (
+      trimmed === "[object Object]" ||
+      trimmed === "{}" ||
+      trimmed === "null" ||
+      trimmed === "undefined" ||
+      trimmed === ""
+    ) {
+      return fallback;
+    }
+    // If the string starts with JSON markers, attempt to parse and format
+    if (
+      (trimmed.startsWith("{") && trimmed.endsWith("}")) ||
+      (trimmed.startsWith("[") && trimmed.endsWith("]"))
+    ) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        return cleanReadableSectionText(parsed, fallback);
+      } catch {
+        // Return raw string if not valid JSON
+      }
+    }
+    return trimmed;
+  }
+
+  if (Array.isArray(val)) {
+    const formatted = val
+      .map((item) => {
+        if (typeof item === "string") {
+          const s = item.trim();
+          return s && s !== "[object Object]" ? `• ${s}` : "";
+        }
+        if (typeof item === "object" && item !== null) {
+          const entries = Object.entries(item)
+            .filter(([, v]) => v !== null && v !== undefined && String(v) !== "[object Object]")
+            .map(([k, v]) => `${formatKeyTitle(k)}: ${typeof v === "object" ? cleanReadableSectionText(v, "") : String(v)}`)
+            .join(". ");
+          return entries ? `• ${entries}` : "";
+        }
+        return `• ${String(item)}`;
+      })
+      .filter(Boolean)
+      .join("\n\n");
+    return formatted || fallback;
+  }
+
+  if (typeof val === "object") {
+    const obj = val as Record<string, unknown>;
+    // Check known string direct properties
+    const directKeys = [
+      "text",
+      "description",
+      "summary",
+      "explanation",
+      "detail",
+      "content",
+      "overview",
+      "plain",
+      "technical",
+    ];
+    for (const key of directKeys) {
+      if (
+        typeof obj[key] === "string" &&
+        obj[key].trim() &&
+        obj[key] !== "[object Object]"
+      ) {
+        return (obj[key] as string).trim();
+      }
+    }
+
+    // Otherwise format structured key-value pairs
+    const pairs: string[] = [];
+    for (const [k, v] of Object.entries(obj)) {
+      if (v === null || v === undefined) continue;
+      const label = formatKeyTitle(k);
+      if (typeof v === "string" && v.trim() && v !== "[object Object]") {
+        pairs.push(`**${label}:** ${v.trim()}`);
+      } else if (Array.isArray(v)) {
+        const list = v
+          .map((item) => (typeof item === "string" ? item : JSON.stringify(item)))
+          .filter((s) => s !== "[object Object]")
+          .join(", ");
+        if (list) pairs.push(`**${label}:** ${list}`);
+      } else if (typeof v === "object") {
+        const nested = cleanReadableSectionText(v, "");
+        if (nested && nested !== fallback) {
+          pairs.push(`**${label}:**\n${nested}`);
+        }
+      } else {
+        pairs.push(`**${label}:** ${String(v)}`);
+      }
+    }
+    if (pairs.length > 0) {
+      return pairs.join("\n\n");
+    }
+  }
+
+  const str = String(val);
+  return str === "[object Object]" ? fallback : str;
+}
+
+function formatKeyTitle(key: string): string {
+  return key
+    .replace(/([A-Z])/g, " $1")
+    .replace(/[_-]/g, " ")
+    .replace(/^\w/, (c) => c.toUpperCase())
+    .trim();
+}
+
+function getSectionDefaultContent(title: string, _cluster: string): { beginner: string; technical: string } {
+  const t = title.toLowerCase();
+
+  if (t.includes("threat") || t.includes("validity")) {
+    return {
+      beginner: "Explains factors that might limit how widely the study's conclusions apply, such as specific benchmark conditions, evaluation surrogate metrics, or synthetic data constraints.",
+      technical: "Evaluates internal validity (confounding variables and attribution), external validity (generalizability across real-world domains), construct validity (surrogate metric alignment), and statistical conclusion validity.",
+    };
+  }
+  if (t.includes("ethic")) {
+    return {
+      beginner: "Discusses responsible research practices, societal impact, safety safeguards, and prevention of automated misuse in scientific discovery.",
+      technical: "Examines ethical risk vectors, compliance with institutional research guidelines, computational environmental footprints, dual-use implications, and safety mitigation protocols.",
+    };
+  }
+  if (t.includes("reproducib") || t.includes("open science")) {
+    return {
+      beginner: "Details whether experimental code, models, and evaluation datasets are publicly accessible so other researchers can verify and replicate results.",
+      technical: "Documents open release status of source repositories, pre-trained weights, random seed protocols, hyperparameter schedules, and computational execution environments.",
+    };
+  }
+  if (t.includes("implication")) {
+    return {
+      beginner: "Highlights how this research breakthrough influences future technology and practical tools for students, engineers, and researchers.",
+      technical: "Delineates foundational theoretical contributions, paradigm shifts, and practical engineering integrations for downstream academic and industrial applications.",
+    };
+  }
+  if (t.includes("future") || t.includes("direction")) {
+    return {
+      beginner: "Outlines exciting next steps and open challenges where upcoming research projects and student theses can build upon this paper.",
+      technical: "Specifies open empirical avenues, algorithmic extensions, multi-domain scaling frontiers, and unaddressed benchmark challenges for follow-up scientific investigation.",
+    };
+  }
+  if (t.includes("strength")) {
+    return {
+      beginner: "Highlights the main advantages, novel discoveries, and verified improvements demonstrated by this research paper.",
+      technical: "Synthesizes evidenced algorithmic advancements, superior empirical metrics over baselines, and theoretical rigor documented in the manuscript.",
+    };
+  }
+  if (t.includes("limitation")) {
+    return {
+      beginner: "Explains boundaries, edge cases, and conditions where the proposed system or theory might struggle or fail.",
+      technical: "Details bounded domain constraints, computational cost limitations, dataset sampling biases, and observed error modes under adversarial conditions.",
+    };
+  }
+
+  return {
+    beginner: `Detailed plain-language conceptual explanation for ${title} grounded in published paper evidence.`,
+    technical: `Peer-review-grade technical specification and empirical parameters for ${title} documented in the source manuscript.`,
+  };
+}
+
+export const executiveResearchOverviewSchema = z.preprocess(
+  (val: unknown) => {
+    if (typeof val === "object" && val !== null) {
+      const obj = val as Record<string, unknown>;
+      return {
+        ...obj,
+        beginnerExplanation: cleanReadableSectionText(
+          obj.beginnerExplanation ?? obj.summary ?? obj.overview,
+          "This paper explores an academic research question."
+        ),
+        beginnerAnalogy: cleanReadableSectionText(
+          obj.beginnerAnalogy ?? obj.analogy,
+          "Imagine a process where multiple components collaborate in parallel."
+        ),
+        technicalContribution: cleanReadableSectionText(
+          obj.technicalContribution ?? obj.contribution,
+          "Presents an empirical methodology and theoretical contribution."
+        ),
+        problemAddressed: cleanReadableSectionText(
+          obj.problemAddressed ?? obj.problem,
+          "Addressing existing computational or theoretical bottlenecks."
+        ),
+        whyItMatters: cleanReadableSectionText(
+          obj.whyItMatters ?? obj.significance,
+          "Enables more efficient and scalable academic inquiry."
+        ),
+        whatDiscovered: cleanReadableSectionText(
+          obj.whatDiscovered ?? obj.discovery ?? obj.result,
+          "Achieved measurable empirical improvements over tested baselines."
+        ),
+      };
+    }
+    return val;
+  },
+  z.object({
+    beginnerExplanation: z.string().min(1).default("This paper explores an academic research question."),
+    beginnerAnalogy: z.string().default("Imagine a process where multiple components collaborate in parallel."),
+    technicalContribution: z.string().min(1).default("Presents an empirical methodology and theoretical contribution."),
+    problemAddressed: z.string().default("Addressing existing computational or theoretical bottlenecks."),
+    whyItMatters: z.string().default("Enables more efficient and scalable academic inquiry."),
+    whatDiscovered: z.string().default("Achieved measurable empirical improvements over tested baselines."),
+    whoBenefits: stringArrayCoerce.default(["Academic researchers", "Industry practitioners", "Students"]),
+  })
+);
 
 export const metricCardSchema = z.preprocess(
   (val: unknown) => {
     if (typeof val === "string") {
+      const text = cleanReadableSectionText(val, "Reported");
       return {
         label: "Metric",
-        headline: val,
-        detail: val,
+        headline: text.slice(0, 80),
+        detail: text,
         status: "from_document",
         pageReferences: [],
       };
@@ -71,8 +275,14 @@ export const metricCardSchema = z.preprocess(
       const obj = val as Record<string, unknown>;
       return {
         label: typeof obj.label === "string" ? obj.label : "Metric",
-        headline: typeof obj.headline === "string" ? obj.headline : typeof obj.title === "string" ? obj.title : String(obj.value || obj.text || "Reported"),
-        detail: typeof obj.detail === "string" ? obj.detail : typeof obj.description === "string" ? obj.description : String(obj.text || obj.headline || ""),
+        headline: cleanReadableSectionText(
+          obj.headline ?? obj.title ?? obj.value ?? obj.text,
+          "Reported"
+        ).slice(0, 80),
+        detail: cleanReadableSectionText(
+          obj.detail ?? obj.description ?? obj.text ?? obj.headline,
+          "Document evidence"
+        ),
         status: obj.status || "from_document",
         pageReferences: obj.pageReferences || [],
       };
@@ -103,28 +313,42 @@ export const explorerSectionItemSchema = z.preprocess(
   (val: unknown) => {
     if (typeof val === "object" && val !== null) {
       const obj = val as Record<string, unknown>;
+      const title =
+        typeof obj.title === "string" && obj.title.trim()
+          ? obj.title.trim()
+          : typeof obj.heading === "string" && obj.heading.trim()
+          ? obj.heading.trim()
+          : "Research Dimension";
+
+      const clusterVal = (obj.cluster as string) || "foundation";
+      const cluster = ["foundation", "methodology", "experiments", "evaluation", "impact"].includes(clusterVal)
+        ? (clusterVal as "foundation" | "methodology" | "experiments" | "evaluation" | "impact")
+        : "foundation";
+
+      const defaults = getSectionDefaultContent(title, cluster);
+
+      const beginnerExplanation = cleanReadableSectionText(
+        obj.beginnerExplanation ?? obj.beginnerText ?? obj.summary ?? obj.content,
+        defaults.beginner
+      );
+
+      const researcherTechnical = cleanReadableSectionText(
+        obj.researcherTechnical ?? obj.technicalDetail ?? obj.detail ?? obj.content ?? obj.beginnerExplanation,
+        defaults.technical
+      );
+
       return {
         id: obj.id || `sec_${Math.random().toString(36).substring(2, 9)}`,
         sectionNumber: typeof obj.sectionNumber === "number" ? obj.sectionNumber : 1,
-        title: typeof obj.title === "string" ? obj.title : typeof obj.heading === "string" ? obj.heading : "Research Dimension",
-        cluster: obj.cluster || "foundation",
-        beginnerExplanation:
-          typeof obj.beginnerExplanation === "string"
-            ? obj.beginnerExplanation
-            : typeof obj.beginnerText === "string"
-            ? obj.beginnerText
-            : String(obj.content || obj.summary || "Summary"),
-        researcherTechnical:
-          typeof obj.researcherTechnical === "string"
-            ? obj.researcherTechnical
-            : typeof obj.technicalDetail === "string"
-            ? obj.technicalDetail
-            : String(obj.content || obj.detail || "Technical formulation"),
+        title,
+        cluster,
+        beginnerExplanation,
+        researcherTechnical,
         evidenceStatus: obj.evidenceStatus || obj.status || "from_document",
         pageReferences: obj.pageReferences || [],
-        quote: typeof obj.quote === "string" ? obj.quote : undefined,
-        bulletPoints: obj.bulletPoints || [],
-        keyValuePairs: obj.keyValuePairs || [],
+        quote: typeof obj.quote === "string" && obj.quote !== "[object Object]" ? obj.quote : undefined,
+        bulletPoints: Array.isArray(obj.bulletPoints) ? obj.bulletPoints : [],
+        keyValuePairs: Array.isArray(obj.keyValuePairs) ? obj.keyValuePairs : [],
       };
     }
     return val;

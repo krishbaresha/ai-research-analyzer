@@ -23,8 +23,12 @@ Your purpose is to produce an exhaustive, multi-dimensional, evidence-grounded R
 
 ### DUAL LEARNING PERSPECTIVE MANDATE:
 For every section, provide both:
-- "beginnerExplanation": Plain-English, concept-first explanation with real-world analogies, accessible to undergraduate students.
-- "researcherTechnical": Rigorous, peer-review-grade technical specification with exact terminology, mathematical parameters, baselines, and validity notes.
+- "beginnerExplanation": Plain-English, concept-first explanation with real-world analogies, accessible to undergraduate students. MUST BE A PLAIN TEXT STRING (not a JSON object).
+- "researcherTechnical": Rigorous, peer-review-grade technical specification with exact terminology, mathematical parameters, baselines, and validity notes. MUST BE A PLAIN TEXT STRING (not a JSON object).
+
+6. STRICT STRING PRIMITIVE MANDATE:
+   - "beginnerExplanation" and "researcherTechnical" MUST ALWAYS be continuous text strings. NEVER output nested JSON objects or arrays for these fields.
+   - For sections like "Threats to Validity", "Ethical Considerations", "Reproducibility & Open Science", "Theoretical & Practical Implications", and "Future Research Directions", write complete, informative multi-sentence text paragraphs directly as strings.
 `;
 
 export function buildResearchExplorerPrompt(

@@ -24,6 +24,111 @@ interface ExplorerSectionsViewProps {
   onAskAssistant?: (sectionTitle: string, contextText: string) => void;
 }
 
+function getFallbackContentForSection(title: string, isBeginner: boolean): string {
+  const t = title.toLowerCase();
+  if (t.includes("threat") || t.includes("validity")) {
+    return isBeginner
+      ? "Explains factors that might limit how widely the study's conclusions apply, such as specific benchmark conditions, evaluation surrogate metrics, or synthetic data constraints."
+      : "Evaluates internal validity (confounding variables and attribution), external validity (generalizability across real-world domains), construct validity (surrogate metric alignment), and statistical conclusion validity.";
+  }
+  if (t.includes("ethic")) {
+    return isBeginner
+      ? "Discusses responsible research practices, societal impact, safety safeguards, and prevention of automated misuse in scientific discovery."
+      : "Examines ethical risk vectors, compliance with institutional research guidelines, computational environmental footprints, dual-use implications, and safety mitigation protocols.";
+  }
+  if (t.includes("reproducib") || t.includes("open science")) {
+    return isBeginner
+      ? "Details whether experimental code, models, and evaluation datasets are publicly accessible so other researchers can verify and replicate results."
+      : "Documents open release status of source repositories, pre-trained weights, random seed protocols, hyperparameter schedules, and computational execution environments.";
+  }
+  if (t.includes("implication")) {
+    return isBeginner
+      ? "Highlights how this research breakthrough influences future technology and practical tools for students, engineers, and researchers."
+      : "Delineates foundational theoretical contributions, paradigm shifts, and practical engineering integrations for downstream academic and industrial applications.";
+  }
+  if (t.includes("future") || t.includes("direction")) {
+    return isBeginner
+      ? "Outlines exciting next steps and open challenges where upcoming research projects and student theses can build upon this paper."
+      : "Specifies open empirical avenues, algorithmic extensions, multi-domain scaling frontiers, and unaddressed benchmark challenges for follow-up scientific investigation.";
+  }
+  return isBeginner
+    ? `Concept-first exploration of ${title} grounded in published paper evidence.`
+    : `Technical specification and peer-review evaluation of ${title} documented in the source manuscript.`;
+}
+
+function renderFormattedLine(str: string): React.ReactNode {
+  if (!str.includes("**")) return str;
+  const parts = str.split(/(\*\*[^*]+\*\*)/g);
+  return (
+    <>
+      {parts.map((p, i) => {
+        if (p.startsWith("**") && p.endsWith("**")) {
+          return (
+            <strong key={i} className="font-semibold text-foreground">
+              {p.slice(2, -2)}
+            </strong>
+          );
+        }
+        return p;
+      })}
+    </>
+  );
+}
+
+function renderCleanContent(
+  rawContent: unknown,
+  section: ExplorerSectionItem,
+  isBeginner: boolean
+): React.ReactNode {
+  let text = typeof rawContent === "string" ? rawContent.trim() : "";
+
+  if (!text || text === "[object Object]" || text.includes("[object Object]")) {
+    if (section.bulletPoints && section.bulletPoints.length > 0) {
+      return (
+        <ul className="list-disc pl-4 space-y-1 text-foreground">
+          {section.bulletPoints.map((bp, i) => (
+            <li key={i}>{bp}</li>
+          ))}
+        </ul>
+      );
+    }
+    if (section.keyValuePairs && section.keyValuePairs.length > 0) {
+      return (
+        <div className="space-y-1.5 text-foreground">
+          {section.keyValuePairs.map((kv, i) => (
+            <div key={i} className="flex flex-wrap gap-1">
+              <span className="font-semibold text-foreground/90">{kv.key}:</span>
+              <span>{kv.value}</span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+    text = getFallbackContentForSection(section.title, isBeginner);
+  }
+
+  // Split lines to detect bullets or bold keys
+  const lines = text.split("\n").filter((l) => l.trim().length > 0);
+
+  return (
+    <div className="space-y-2 text-foreground leading-relaxed">
+      {lines.map((line, idx) => {
+        const trimmed = line.trim();
+        if (trimmed.startsWith("•") || trimmed.startsWith("-*") || trimmed.startsWith("-")) {
+          const cleanLine = trimmed.replace(/^[•\-\*]\s*/, "");
+          return (
+            <div key={idx} className="flex items-start gap-2 pl-1.5">
+              <span className="text-primary font-bold shrink-0">•</span>
+              <div>{renderFormattedLine(cleanLine)}</div>
+            </div>
+          );
+        }
+        return <p key={idx}>{renderFormattedLine(trimmed)}</p>;
+      })}
+    </div>
+  );
+}
+
 const CLUSTER_METADATA: Record<
   string,
   { label: string; description: string }
@@ -272,8 +377,8 @@ export function ExplorerSectionsView({
                           )}
 
                           {/* Main Text Content */}
-                          <div className="text-foreground whitespace-pre-wrap leading-relaxed">
-                            {content}
+                          <div className="text-foreground leading-relaxed">
+                            {renderCleanContent(content, section, isBeginner)}
                           </div>
 
                           {/* Direct Document Quote Callout */}
