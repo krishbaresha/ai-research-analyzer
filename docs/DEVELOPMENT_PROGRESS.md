@@ -15,9 +15,9 @@
 | **Phase 4** | PDF Analysis and Evidence-Grounded Reports | **COMPLETED** | 2026-11-03 |
 | **Phase 5** | Document Chat + Scholarly Paper Import + Research Library Foundation | **COMPLETED** | 2026-11-03 |
 | **Phase 5.5** | Research Explorer Experience & Academic Intelligence | **COMPLETED** | 2026-11-05 |
-| **Phase 6** | Research Explorer Core & Epistemic Deep Dive | Planned (Next) | — |
+| **Phase 6** | Research Explorer Core & Epistemic Deep Dive | **COMPLETED** | 2026-11-05 |
 | **Phase 7** | Visual Intelligence & Reconstructed Scientific Artifacts | Planned | — |
-| **Phase 8** | Persistent Research Workspace (PostgreSQL/Supabase) | Planned | — |
+| **Phase 8** | Persistent Research Workspace (Firebase Firestore Database) | **COMPLETED** | 2026-11-07 |
 | **Phase 9** | Multi-Paper Literature Intelligence & Synthesis Matrix | Planned | — |
 | **Phase 10** | Scholarly Discovery & Open Access Ingestion | Planned | — |
 | **Phase 11** | Background Automation Engine & Alerting | Planned | — |
