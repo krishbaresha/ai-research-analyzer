@@ -70,6 +70,33 @@ export function DocumentViewer({
   const [report, setReport] = React.useState<DocumentAnalysisReport | null>(initialReport);
   const [explorerData, setExplorerData] = React.useState<ResearchExplorerData | null>(initialExplorerData);
 
+  // Restore cached exploration or report from local storage if available
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      if (!explorerData) {
+        const cachedExp = localStorage.getItem(`ra_explorer_${metadata.id}`);
+        if (cachedExp) {
+          const parsed = JSON.parse(cachedExp);
+          if (parsed && parsed.identity && parsed.sections) {
+            setExplorerData(parsed);
+          }
+        }
+      }
+      if (!report) {
+        const cachedRep = localStorage.getItem(`ra_report_${metadata.id}`);
+        if (cachedRep) {
+          const parsed = JSON.parse(cachedRep);
+          if (parsed && parsed.overview && parsed.findings) {
+            setReport(parsed);
+          }
+        }
+      }
+    } catch {
+      // Local storage unavailable or corrupt
+    }
+  }, [metadata.id, explorerData, report]);
+
   const currentPage = pages[selectedPageIndex] || pages[0];
   const pagesContainerRef = React.useRef<HTMLDivElement | null>(null);
 
@@ -139,6 +166,11 @@ export function DocumentViewer({
       }
 
       setExplorerData(result.data as ResearchExplorerData);
+      try {
+        localStorage.setItem(`ra_explorer_${metadata.id}`, JSON.stringify(result.data));
+      } catch {
+        // Storage limit reached or private mode
+      }
       setActiveTab("explorer");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Network error during exploration.";
@@ -188,6 +220,11 @@ export function DocumentViewer({
       }
 
       setReport(result.data as DocumentAnalysisReport);
+      try {
+        localStorage.setItem(`ra_report_${metadata.id}`, JSON.stringify(result.data));
+      } catch {
+        // Storage limit reached or private mode
+      }
       setActiveTab("report");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Network error during analysis.";

@@ -43,6 +43,42 @@ describe("Secret Isolation & Security Audit", () => {
     scanDir(featuresDir);
   });
 
+  it("ensures Firebase private credentials and server storage are never imported by client components", () => {
+    const componentsDir = path.resolve(__dirname, "../../src/components");
+    const featuresDir = path.resolve(__dirname, "../../src/features");
+
+    function scanDir(dir: string) {
+      const files = fs.readdirSync(dir, { withFileTypes: true });
+      for (const file of files) {
+        const fullPath = path.join(dir, file.name);
+        if (file.isDirectory()) {
+          scanDir(fullPath);
+        } else if (file.name.endsWith(".tsx") || file.name.endsWith(".ts")) {
+          const fileContent = fs.readFileSync(fullPath, "utf-8");
+
+          if (fileContent.includes('"use client"') || fileContent.includes("'use client'")) {
+            expect(fileContent).not.toContain('from "@/lib/storage/document-store"');
+            expect(fileContent).not.toContain('from "@/lib/storage/conversation-store"');
+            expect(fileContent).not.toContain("FIREBASE_SERVICE_ACCOUNT");
+            expect(fileContent).not.toContain("FIREBASE_ADMIN");
+          }
+        }
+      }
+    }
+
+    scanDir(componentsDir);
+    scanDir(featuresDir);
+  });
+
+  it("ensures .env and .env.local are in .gitignore and never tracked in git", () => {
+    const gitignorePath = path.resolve(__dirname, "../../.gitignore");
+    const content = fs.readFileSync(gitignorePath, "utf-8");
+
+    expect(content).toContain(".env");
+    expect(content).toContain(".env.local");
+    expect(content).toContain(".env.production.local");
+  });
+
   it("ensures Phase 3 PDF extraction never imports or sends data to OpenAI", () => {
     const pdfDir = path.resolve(__dirname, "../../src/lib/pdf");
     const uploadRoutePath = path.resolve(__dirname, "../../src/app/api/documents/upload/route.ts");
