@@ -1,17 +1,21 @@
 import { NextResponse } from "next/server";
 import { getServerConfig } from "@/lib/validation/env.schema";
+import { isFirebaseConfigured } from "@/lib/firebase/config";
 
 export async function GET() {
   const config = getServerConfig();
+  const firebaseReady = isFirebaseConfigured();
 
   return NextResponse.json({
     success: true,
     data: {
       status: "healthy",
-      phase: 5,
+      phase: 6,
       provider: "openai",
       openAIConfigured: config.hasOpenAIKey,
       configuredModel: config.model,
+      database: firebaseReady ? "firebase_firestore" : "in_memory",
+      firebaseConfigured: firebaseReady,
       maxUploadBytes: config.maxUploadSizeBytes,
       runtime: "nodejs",
       capabilities: {

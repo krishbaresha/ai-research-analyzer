@@ -1,4 +1,6 @@
 import { ConversationSession, ChatMessage } from "@/types/chat";
+import { getFirestoreDb, isFirebaseConfigured } from "@/lib/firebase/config";
+import { doc, setDoc, getDoc, getDocs, collection, deleteDoc, query, where } from "firebase/firestore";
 
 export interface ConversationStore {
   createSession(documentId: string): Promise<ConversationSession>;
@@ -14,20 +16,24 @@ export interface ConversationStore {
 const MAX_SESSIONS = 50;
 const MAX_MESSAGES_PER_SESSION = 20;
 
+function cleanForFirestore<T>(data: T): T {
+  return JSON.parse(JSON.stringify(data));
+}
+
 /**
- * In-Memory Conversation Store.
- * Ephemeral session storage for Phase 5 Document Chat, adhering to ADR-004.
- * Note: Sessions are stored in memory and reset upon server restart.
+ * Hybrid Conversation Store with Cloud Firestore persistence.
+ * Persists chat sessions and message histories to Firebase Firestore,
+ * maintaining session state across serverless function restarts.
  */
-class InMemoryConversationStore implements ConversationStore {
-  private sessions = new Map<string, ConversationSession>();
+class HybridConversationStore implements ConversationStore {
+  private cache = new Map<string, ConversationSession>();
 
   async createSession(documentId: string): Promise<ConversationSession> {
     // Evict oldest session if capacity reached
-    if (this.sessions.size >= MAX_SESSIONS) {
-      const oldestKey = this.sessions.keys().next().value;
+    if (this.cache.size >= MAX_SESSIONS) {
+      const oldestKey = this.cache.keys().next().value;
       if (oldestKey) {
-        this.sessions.delete(oldestKey);
+        this.cache.delete(oldestKey);
       }
     }
 
@@ -42,19 +48,52 @@ class InMemoryConversationStore implements ConversationStore {
       messages: [],
     };
 
-    this.sessions.set(id, session);
+    this.cache.set(id, session);
+
+    if (isFirebaseConfigured()) {
+      try {
+        const db = getFirestoreDb();
+        if (db) {
+          const docRef = doc(db, "chat_sessions", id);
+          await setDoc(docRef, cleanForFirestore(session));
+        }
+      } catch (err) {
+        console.warn("[Firestore ConversationStore] Failed to create session in Firebase:", err);
+      }
+    }
+
     return session;
   }
 
   async getSession(id: string): Promise<ConversationSession | null> {
-    return this.sessions.get(id) || null;
+    const cached = this.cache.get(id);
+    if (cached) return cached;
+
+    if (isFirebaseConfigured()) {
+      try {
+        const db = getFirestoreDb();
+        if (db) {
+          const docRef = doc(db, "chat_sessions", id);
+          const snap = await getDoc(docRef);
+          if (snap.exists()) {
+            const data = snap.data() as ConversationSession;
+            this.cache.set(id, data);
+            return data;
+          }
+        }
+      } catch (err) {
+        console.warn("[Firestore ConversationStore] Failed to get session from Firebase:", err);
+      }
+    }
+
+    return null;
   }
 
   async addMessage(
     conversationId: string,
     message: ChatMessage
   ): Promise<ConversationSession | null> {
-    const session = this.sessions.get(conversationId);
+    const session = await this.getSession(conversationId);
     if (!session) return null;
 
     session.messages.push(message);
@@ -65,35 +104,99 @@ class InMemoryConversationStore implements ConversationStore {
     }
 
     session.updatedAt = new Date().toISOString();
-    this.sessions.set(conversationId, session);
+    this.cache.set(conversationId, session);
+
+    if (isFirebaseConfigured()) {
+      try {
+        const db = getFirestoreDb();
+        if (db) {
+          const docRef = doc(db, "chat_sessions", conversationId);
+          await setDoc(docRef, cleanForFirestore(session));
+        }
+      } catch (err) {
+        console.warn("[Firestore ConversationStore] Failed to update session in Firebase:", err);
+      }
+    }
+
     return session;
   }
 
   async clearSession(conversationId: string): Promise<boolean> {
-    const session = this.sessions.get(conversationId);
+    const session = await this.getSession(conversationId);
     if (!session) return false;
 
     session.messages = [];
     session.updatedAt = new Date().toISOString();
+    this.cache.set(conversationId, session);
+
+    if (isFirebaseConfigured()) {
+      try {
+        const db = getFirestoreDb();
+        if (db) {
+          const docRef = doc(db, "chat_sessions", conversationId);
+          await setDoc(docRef, cleanForFirestore(session));
+        }
+      } catch (err) {
+        console.warn("[Firestore ConversationStore] Failed to clear session in Firebase:", err);
+      }
+    }
+
     return true;
   }
 
   async deleteSession(conversationId: string): Promise<boolean> {
-    return this.sessions.delete(conversationId);
+    const wasInCache = this.cache.delete(conversationId);
+
+    if (isFirebaseConfigured()) {
+      try {
+        const db = getFirestoreDb();
+        if (db) {
+          const docRef = doc(db, "chat_sessions", conversationId);
+          await deleteDoc(docRef);
+          return true;
+        }
+      } catch (err) {
+        console.warn("[Firestore ConversationStore] Failed to delete session in Firebase:", err);
+      }
+    }
+
+    return wasInCache;
   }
 
   async getSessionsForDocument(documentId: string): Promise<ConversationSession[]> {
-    return Array.from(this.sessions.values()).filter(
+    if (isFirebaseConfigured()) {
+      try {
+        const db = getFirestoreDb();
+        if (db) {
+          const colRef = collection(db, "chat_sessions");
+          const q = query(colRef, where("documentId", "==", documentId));
+          const snap = await getDocs(q);
+          const list: ConversationSession[] = [];
+          snap.forEach((d) => {
+            const data = d.data() as ConversationSession;
+            if (data) {
+              list.push(data);
+              this.cache.set(data.id, data);
+            }
+          });
+          if (list.length > 0) return list;
+        }
+      } catch (err) {
+        console.warn("[Firestore ConversationStore] Failed to query sessions from Firebase:", err);
+      }
+    }
+
+    return Array.from(this.cache.values()).filter(
       (s) => s.documentId === documentId
     );
   }
 
   async clear(): Promise<void> {
-    this.sessions.clear();
+    this.cache.clear();
   }
 
   async count(): Promise<number> {
-    return this.sessions.size;
+    return this.cache.size;
   }
 }
 
@@ -104,7 +207,7 @@ const globalForConversationStore = globalThis as unknown as {
 
 export const conversationStore =
   globalForConversationStore.conversationStoreInstance ??
-  new InMemoryConversationStore();
+  new HybridConversationStore();
 
 if (process.env.NODE_ENV !== "production") {
   globalForConversationStore.conversationStoreInstance = conversationStore;
