@@ -18,6 +18,7 @@ import {
   Download,
 } from "lucide-react";
 import { DocumentAnalysisReport } from "@/types/research";
+import { exportDocumentAnalysisToPdf } from "@/lib/export/pdf-exporter";
 import {
   Card,
   CardContent,
@@ -122,13 +123,7 @@ ${report.suggestedFurtherResearch.map((r, i) => `${i + 1}. ${r}`).join("\n")}
   };
 
   const handlePrintPdf = () => {
-    const originalTitle = document.title;
-    const cleanTitle = (overview.title || "Research-Analysis-Report")
-      .replace(/[^a-zA-Z0-9_-]+/g, "_")
-      .slice(0, 60);
-    document.title = `${cleanTitle}_Analysis_Report`;
-    window.print();
-    document.title = originalTitle;
+    exportDocumentAnalysisToPdf(report, overview.title || "Research_Document");
   };
 
   const handleDownloadWord = () => {

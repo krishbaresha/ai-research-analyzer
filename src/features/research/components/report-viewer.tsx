@@ -18,6 +18,7 @@ import {
   FileText,
 } from "lucide-react";
 import { ResearchReport } from "@/types/research";
+import { exportTopicResearchToPdf } from "@/lib/export/pdf-exporter";
 import {
   Card,
   CardContent,
@@ -91,13 +92,7 @@ ${followUpsText}
   };
 
   const handlePrintPdf = () => {
-    const originalTitle = document.title;
-    const cleanTitle = (report.title || "Topic-Research-Report")
-      .replace(/[^a-zA-Z0-9_-]+/g, "_")
-      .slice(0, 60);
-    document.title = `${cleanTitle}_Research_Report`;
-    window.print();
-    document.title = originalTitle;
+    exportTopicResearchToPdf(report);
   };
 
   const handleDownloadWord = () => {

@@ -4,7 +4,6 @@ import * as React from "react";
 import {
   Layers,
   MessageSquare,
-  Printer,
   Download,
   GraduationCap,
   Microscope,
@@ -120,9 +119,9 @@ export function OutlineNav({
             size="sm"
             onClick={onPrintPdf}
             className="h-8 gap-1.5 text-xs"
-            title="Print or Save as Vector PDF"
+            title="Download Academic PDF Report (.pdf)"
           >
-            <Printer className="h-3.5 w-3.5" />
+            <Download className="h-3.5 w-3.5" />
             <span className="hidden md:inline">PDF</span>
           </Button>
           <Button

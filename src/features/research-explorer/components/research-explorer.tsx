@@ -24,6 +24,7 @@ import {
   BookOpen,
   GitBranch,
 } from "lucide-react";
+import { exportResearchExplorerToPdf } from "@/lib/export/pdf-exporter";
 
 interface ResearchExplorerProps {
   document: ExtractedDocument;
@@ -49,7 +50,7 @@ export function ResearchExplorer({
   };
 
   const handlePrintPdf = () => {
-    window.print();
+    exportResearchExplorerToPdf(explorerData, extractedDoc);
   };
 
   const handleExportWordDoc = () => {

@@ -68,11 +68,14 @@ describe("Firebase Firestore & Hybrid Storage (Unit)", () => {
       id: "msg_1",
       role: "user",
       content: "What are selective state spaces?",
-      timestamp: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
     });
 
     expect(updated?.messages).toHaveLength(1);
-    expect(updated?.messages[0].content).toBe("What are selective state spaces?");
+    const firstMsg = updated?.messages[0];
+    if (firstMsg?.role === "user") {
+      expect(firstMsg.content).toBe("What are selective state spaces?");
+    }
 
     const docSessions = await conversationStore.getSessionsForDocument("firebase_doc_test_1");
     expect(docSessions.some((s) => s.id === session.id)).toBe(true);
