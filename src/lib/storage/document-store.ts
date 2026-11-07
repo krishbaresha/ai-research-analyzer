@@ -81,9 +81,17 @@ class HybridDocumentStore implements DocumentStore {
           snap.forEach((d) => {
             const docData = d.data() as ExtractedDocument;
             if (docData && docData.metadata) {
-              list.push(docData.metadata);
+              const meta: DocumentMetadata = {
+                ...docData.metadata,
+                isExplored: Boolean(docData.metadata.isExplored || docData.explorerData),
+                isAnalyzed: Boolean(docData.metadata.isAnalyzed || docData.analysisReport),
+              };
+              list.push(meta);
               if (!this.cache.has(docData.metadata.id)) {
-                this.cache.set(docData.metadata.id, docData);
+                this.cache.set(docData.metadata.id, {
+                  ...docData,
+                  metadata: meta,
+                });
               }
             }
           });
@@ -94,7 +102,11 @@ class HybridDocumentStore implements DocumentStore {
       }
     }
 
-    return Array.from(this.cache.values()).map((doc) => doc.metadata);
+    return Array.from(this.cache.values()).map((doc) => ({
+      ...doc.metadata,
+      isExplored: Boolean(doc.metadata.isExplored || doc.explorerData),
+      isAnalyzed: Boolean(doc.metadata.isAnalyzed || doc.analysisReport),
+    }));
   }
 
   async search(query: string): Promise<DocumentMetadata[]> {

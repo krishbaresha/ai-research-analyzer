@@ -214,6 +214,16 @@ export default function ResearchLibraryPage() {
                         OA: {doc.openAccessStatus}
                       </Badge>
                     )}
+                    {doc.isExplored && (
+                      <Badge variant="from_document" className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20">
+                        ✓ Explorer Ready
+                      </Badge>
+                    )}
+                    {doc.isAnalyzed && !doc.isExplored && (
+                      <Badge variant="outline" className="text-[10px] text-sky-600 border-sky-300">
+                        ✓ Report Ready
+                      </Badge>
+                    )}
                   </div>
 
                   <button

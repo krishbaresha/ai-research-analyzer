@@ -80,7 +80,11 @@ export default async function DocumentWorkspacePage({
           </div>
         </div>
 
-        <DocumentViewer document={document} />
+        <DocumentViewer
+          document={document}
+          initialExplorerData={document.explorerData || null}
+          initialReport={document.analysisReport || null}
+        />
       </div>
     );
   }

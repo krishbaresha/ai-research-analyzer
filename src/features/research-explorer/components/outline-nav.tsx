@@ -7,6 +7,7 @@ import {
   Download,
   GraduationCap,
   Microscope,
+  Quote,
 } from "lucide-react";
 import { ReadingMode } from "@/types/research-explorer";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,7 @@ interface OutlineNavProps {
   onReadingModeChange: (mode: ReadingMode) => void;
   onPrintPdf: () => void;
   onExportWord: () => void;
+  onOpenCite?: () => void;
   onViewPages?: () => void;
   onOpenChat: () => void;
 }
@@ -39,6 +41,7 @@ export function OutlineNav({
   onReadingModeChange,
   onPrintPdf,
   onExportWord,
+  onOpenCite,
   onViewPages,
   onOpenChat,
 }: OutlineNavProps) {
@@ -114,6 +117,18 @@ export function OutlineNav({
 
         {/* Export & Chat Actions */}
         <div className="flex items-center gap-1">
+          {onOpenCite && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onOpenCite}
+              className="h-8 gap-1.5 text-xs text-primary border-primary/30 hover:bg-primary/10"
+              title="Cite Paper (BibTeX, APA, IEEE, Overleaf)"
+            >
+              <Quote className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Cite</span>
+            </Button>
+          )}
           <Button
             variant="outline"
             size="sm"

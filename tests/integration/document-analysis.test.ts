@@ -80,6 +80,8 @@ describe("Document Analysis & Grounded Report Integration (Phase 4)", () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     await documentStore.clear();
+    delete (sampleDocument as unknown as { analysisReport?: unknown }).analysisReport;
+    delete (sampleDocument as unknown as { explorerData?: unknown }).explorerData;
     process.env.OPENAI_API_KEY = "sk-test-mock-key";
   });
 

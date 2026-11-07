@@ -3,6 +3,48 @@ import { documentStore } from "@/lib/storage/document-store";
 import { getAIProvider, AIServiceError } from "@/lib/ai";
 import { analyzeDocumentRequestSchema } from "@/lib/validation/research.schema";
 
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  if (!id) {
+    return NextResponse.json(
+      { success: false, error: { code: "BAD_REQUEST", message: "Document ID parameter is required." } },
+      { status: 400 }
+    );
+  }
+
+  const document = await documentStore.get(id);
+  if (!document) {
+    return NextResponse.json(
+      { success: false, error: { code: "NOT_FOUND", message: `Document with ID '${id}' was not found.` } },
+      { status: 404 }
+    );
+  }
+
+  if (document.analysisReport) {
+    return NextResponse.json(
+      {
+        success: true,
+        data: document.analysisReport,
+        metadata: {
+          timestamp: new Date().toISOString(),
+          cached: true,
+          tokensSaved: true,
+          source: "firestore_permanent_cache",
+        },
+      },
+      { status: 200 }
+    );
+  }
+
+  return NextResponse.json(
+    { success: false, error: { code: "NOT_ANALYZED", message: "Document has not yet been analyzed." } },
+    { status: 404 }
+  );
+}
+
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -59,14 +101,33 @@ export async function POST(
 
   // Parse optional request parameters
   let focusArea: string | undefined;
+  let force = false;
   try {
     const body = await req.json();
+    if (body.force === true) force = true;
     const validation = analyzeDocumentRequestSchema.safeParse(body);
     if (validation.success && validation.data.focusArea) {
       focusArea = validation.data.focusArea;
     }
   } catch {
     // Empty or non-JSON body is valid (focusArea is optional)
+  }
+
+  // Token Zero-Waste Guard: return cached analysis if available and not forced
+  if (!force && !focusArea && document.analysisReport) {
+    return NextResponse.json(
+      {
+        success: true,
+        data: document.analysisReport,
+        metadata: {
+          timestamp: new Date().toISOString(),
+          cached: true,
+          tokensSaved: true,
+          model: "firestore-permanent-cache",
+        },
+      },
+      { status: 200 }
+    );
   }
 
   try {
@@ -78,6 +139,11 @@ export async function POST(
       focusArea,
     });
 
+    // Permanently save report in Firestore
+    document.analysisReport = result.data;
+    document.metadata.isAnalyzed = true;
+    await documentStore.save(document);
+
     return NextResponse.json(
       {
         success: true,
@@ -88,6 +154,7 @@ export async function POST(
           model: result.modelUsed,
           coveragePercentage: result.data.overview.coveragePercentage,
           analyzedPages: result.data.overview.analyzedPages,
+          cached: false,
         },
       },
       { status: 200 }

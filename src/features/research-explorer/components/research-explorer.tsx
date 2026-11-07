@@ -16,6 +16,7 @@ import { ExplorerSectionsView } from "./explorer-sections-view";
 import { TechnicalGlossaryView } from "./technical-glossary-view";
 import { AmbientChatDock } from "./ambient-chat-dock";
 import { OutlineNav, OutlineNavItem } from "./outline-nav";
+import { AcademicCitationModal } from "./academic-citation-modal";
 import {
   Compass,
   Sparkles,
@@ -43,6 +44,7 @@ export function ResearchExplorer({
 }: ResearchExplorerProps) {
   const [readingMode, setReadingMode] = React.useState<ReadingMode>("beginner");
   const [isAmbientChatOpen, setIsAmbientChatOpen] = React.useState(false);
+  const [isCitationOpen, setIsCitationOpen] = React.useState(false);
   const [ambientChatQuery, setAmbientChatQuery] = React.useState<string | undefined>(undefined);
   const [activeNav, setActiveNav] = React.useState<string>("identity");
 
@@ -194,6 +196,7 @@ export function ResearchExplorer({
         onNavigate={scrollTo}
         readingMode={readingMode}
         onReadingModeChange={setReadingMode}
+        onOpenCite={() => setIsCitationOpen(true)}
         onPrintPdf={handlePrintPdf}
         onExportWord={handleExportWordDoc}
         onViewPages={onViewPages}
@@ -284,6 +287,13 @@ export function ResearchExplorer({
           onSelectPage?.(pageNum);
         }}
         initialQuery={ambientChatQuery}
+      />
+
+      {/* 1-Click BibTeX & Academic Citation Suite Modal */}
+      <AcademicCitationModal
+        identity={explorerData.identity}
+        isOpen={isCitationOpen}
+        onClose={() => setIsCitationOpen(false)}
       />
     </div>
   );

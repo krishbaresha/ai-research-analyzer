@@ -1,3 +1,6 @@
+import type { ResearchExplorerData } from "./research-explorer";
+import type { DocumentAnalysisReport } from "./research";
+
 export type DocumentProcessingStatus =
   | "uploaded"
   | "parsing"
@@ -76,12 +79,16 @@ export interface DocumentMetadata {
   contentHash?: string;
   documentType?: DocumentClassificationType;
   abstract?: string;
+  isExplored?: boolean;
+  isAnalyzed?: boolean;
 }
 
 export interface ExtractedDocument {
   metadata: DocumentMetadata;
   pages: ExtractedPage[];
   fullText: string;
+  explorerData?: ResearchExplorerData | null;
+  analysisReport?: DocumentAnalysisReport | null;
 }
 
 export interface DocumentItem {

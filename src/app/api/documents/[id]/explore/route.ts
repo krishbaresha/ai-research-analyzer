@@ -3,6 +3,48 @@ import { documentStore } from "@/lib/storage/document-store";
 import { getAIProvider, AIServiceError } from "@/lib/ai";
 import { analyzeDocumentRequestSchema } from "@/lib/validation/research.schema";
 
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  if (!id) {
+    return NextResponse.json(
+      { success: false, error: { code: "BAD_REQUEST", message: "Document ID parameter is required." } },
+      { status: 400 }
+    );
+  }
+
+  const document = await documentStore.get(id);
+  if (!document) {
+    return NextResponse.json(
+      { success: false, error: { code: "NOT_FOUND", message: `Document with ID '${id}' was not found.` } },
+      { status: 404 }
+    );
+  }
+
+  if (document.explorerData) {
+    return NextResponse.json(
+      {
+        success: true,
+        data: document.explorerData,
+        metadata: {
+          timestamp: new Date().toISOString(),
+          cached: true,
+          tokensSaved: true,
+          source: "firestore_permanent_cache",
+        },
+      },
+      { status: 200 }
+    );
+  }
+
+  return NextResponse.json(
+    { success: false, error: { code: "NOT_EXPLORED", message: "Document has not yet been explored." } },
+    { status: 404 }
+  );
+}
+
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -59,14 +101,33 @@ export async function POST(
 
   // Parse optional request parameters
   let focusArea: string | undefined;
+  let force = false;
   try {
     const body = await req.json();
+    if (body.force === true) force = true;
     const validation = analyzeDocumentRequestSchema.safeParse(body);
     if (validation.success && validation.data.focusArea) {
       focusArea = validation.data.focusArea;
     }
   } catch {
     // Optional
+  }
+
+  // 1. Token Zero-Waste Guard: If paper was already analyzed and user did not request a custom focus or force refresh, return cached data!
+  if (!force && !focusArea && document.explorerData) {
+    return NextResponse.json(
+      {
+        success: true,
+        data: document.explorerData,
+        metadata: {
+          timestamp: new Date().toISOString(),
+          cached: true,
+          tokensSaved: true,
+          model: "firestore-permanent-cache",
+        },
+      },
+      { status: 200 }
+    );
   }
 
   try {
@@ -78,6 +139,20 @@ export async function POST(
       focusArea,
     });
 
+    // 2. Permanently save explored data into Firebase Firestore document record
+    document.explorerData = result.data;
+    document.metadata.isExplored = true;
+    if (result.data.identity.title && result.data.identity.title !== "Academic Research Paper") {
+      document.metadata.title = result.data.identity.title;
+    }
+    if (result.data.identity.authors && result.data.identity.authors.length > 0) {
+      document.metadata.authors = result.data.identity.authors;
+    }
+    if (result.data.identity.publicationYear) {
+      document.metadata.publicationYear = Number(result.data.identity.publicationYear) || document.metadata.publicationYear;
+    }
+    await documentStore.save(document);
+
     return NextResponse.json(
       {
         success: true,
@@ -86,6 +161,7 @@ export async function POST(
           timestamp: new Date().toISOString(),
           processingTimeMs: result.processingTimeMs,
           model: result.modelUsed,
+          cached: false,
         },
       },
       { status: 200 }
